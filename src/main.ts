@@ -88,6 +88,7 @@ function setBusy(busy: boolean): void {
   els.recognizeButton.disabled = busy;
   els.resetButton.disabled = busy;
   els.demoButton.disabled = busy;
+  els.library.inert = busy;
   if (!busy) els.statusProgress.hidden = true;
   renderStatus();
 }
@@ -170,7 +171,7 @@ async function runRecognition(): Promise<void> {
     await loadMusicXml(xml);
     setBusy(false);
     setStatus("status.done");
-    await remember(xml, image);
+    remember(xml, image);
   } catch (err) {
     setBusy(false);
     const details = err instanceof RecognizeError ? err.details : `${String(err)}\n${diagnostics()}`;
@@ -293,14 +294,12 @@ function renderLanguage(lang: Lang): void {
   renderLibrary();
 }
 
-/** Returns false when the write failed; a full storage is reported, a blocked one stays silent. */
-function store(write: () => void): boolean {
+/** For small follow-up writes (settings, name, thumbnail): a failure must not interrupt singing, so it stays silent. */
+function store(write: () => void): void {
   try {
     write();
-    return true;
-  } catch (err) {
-    if (err instanceof DOMException && err.name === "QuotaExceededError") setStatus("status.storageFull", {}, true);
-    return false;
+  } catch {
+    // storage full or blocked
   }
 }
 
@@ -340,7 +339,7 @@ async function thumbnail(image: Blob): Promise<string | null> {
     const bitmap = await createImageBitmap(image);
     const canvas = document.createElement("canvas");
     canvas.width = 160;
-    canvas.height = Math.round((160 * bitmap.height) / bitmap.width);
+    canvas.height = Math.max(1, Math.round((160 * bitmap.height) / bitmap.width));
     canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
     return canvas.toDataURL("image/jpeg", 0.7);
@@ -350,25 +349,43 @@ async function thumbnail(image: Blob): Promise<string | null> {
 }
 
 /** Saves the song that was just loaded, or picks up the saved copy (and its settings) when the same notes come in again. */
-async function remember(xml: string, image: Blob | null): Promise<void> {
+function remember(xml: string, image: Blob | null, fileName = ""): void {
   const existing = listSongs().find((s) => s.xml === xml);
   if (existing) {
     state.songId = existing.id;
     if (existing.settings) applySettings(existing.settings);
+    setStatus("status.savedSettings");
     return;
   }
+  const now = new Date();
   const song: Song = {
-    id: String(Date.now()),
-    name: state.melody?.title || t("library.defaultName", { date: new Date().toLocaleDateString(getLang()) }),
-    createdAt: Date.now(),
+    id: `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+    name:
+      state.melody?.title ||
+      fileName ||
+      t("library.defaultName", { date: now.toLocaleString(getLang(), { dateStyle: "short", timeStyle: "short" }) }),
+    createdAt: now.getTime(),
     xml,
-    thumb: image ? await thumbnail(image) : null,
+    thumb: null,
     settings: currentSettings(),
   };
-  if (!store(() => saveSong(song))) return;
+  try {
+    saveSong(song);
+  } catch {
+    setStatus("status.notSaved", {}, true);
+    return;
+  }
   state.songId = song.id;
-  void navigator.storage?.persist?.();
+  navigator.storage?.persist?.().catch(() => undefined);
   renderLibrary();
+  // The thumbnail comes after the save, so a slow decode never holds back the song id and a full storage never costs the song.
+  if (image) {
+    void thumbnail(image).then((thumb) => {
+      if (!thumb) return;
+      store(() => updateSong(song.id, { thumb }));
+      renderLibrary();
+    });
+  }
 }
 
 const songTemplate = document.createElement("template");
@@ -399,6 +416,7 @@ function renderLibrary(): void {
 }
 
 async function openSong(song: Song): Promise<void> {
+  resetInput();
   try {
     await loadMusicXml(song.xml);
   } catch (err) {
@@ -459,7 +477,7 @@ async function openMusicXml(file: File): Promise<void> {
     const xml = await readMusicXmlFile(file);
     await loadMusicXml(xml);
     setStatus(null);
-    await remember(xml, null);
+    remember(xml, null, file.name.replace(/\.(musicxml|xml|mxl)$/i, ""));
   } catch (err) {
     setStatus("status.badFile", { msg: err instanceof Error ? err.message : String(err) }, true);
   }
@@ -535,6 +553,7 @@ els.libraryList.addEventListener("click", (e) => {
     const name = prompt(t("library.renamePrompt"), song.name)?.trim();
     if (name) store(() => updateSong(song.id, { name }));
   } else if (button.classList.contains("song-delete")) {
+    if (!confirm(t("library.deleteConfirm", { name: song.name }))) return;
     store(() => deleteSong(song.id));
     if (state.songId === song.id) state.songId = null;
   }
@@ -589,6 +608,7 @@ systemDark.addEventListener("change", () => renderTheme(savedTheme()));
 renderTheme(savedTheme());
 
 $("silent-hint").hidden = !isIos;
+$("library-ios").hidden = !isIos;
 
 applyTranslations();
 renderLanguage(getLang());

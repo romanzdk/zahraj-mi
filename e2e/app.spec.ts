@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { similarity } from "./similarity";
 
 // Ode to Joy as written in public/demo/oda-na-radost.musicxml.
@@ -130,10 +131,36 @@ test("remembers an opened song with its settings after reload", async ({ page })
   await page.locator("#xml-input").setInputFiles("public/demo/oda-na-radost.musicxml");
   await expect(songs).toHaveCount(1);
   await expect(page.locator("#tempo")).toHaveValue("77");
+  await expect(page.locator("#status-text")).toContainText("saved settings");
 
   page.once("dialog", (d) => void d.accept("Ode"));
   await songs.first().locator(".song-rename").click();
   await expect(songs.first().locator(".song-name")).toHaveText("Ode");
+  page.once("dialog", (d) => void d.dismiss());
   await songs.first().locator(".song-delete").click();
+  await expect(songs).toHaveCount(1);
+  page.once("dialog", (d) => void d.accept());
+  await songs.first().locator(".song-delete").click();
+  await expect(page.locator("#library")).toBeHidden();
+});
+
+test("names an untitled MusicXML song after its file", async ({ page }) => {
+  await open(page);
+  const xml = readFileSync("public/demo/oda-na-radost.musicxml", "utf8").replace(/<work>.*<\/work>/, "");
+  await page.locator("#xml-input").setInputFiles({ name: "Tichá noc.musicxml", mimeType: "text/xml", buffer: Buffer.from(xml) });
+  await expect(page.locator("#library-list .song-name")).toHaveText("Tichá noc");
+});
+
+test("says so when the browser will not store the song", async ({ page }) => {
+  await open(page);
+  await page.locator("[data-lang=en]").click();
+  await page.evaluate(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException("denied", "SecurityError");
+    };
+  });
+  await page.locator("#xml-input").setInputFiles("public/demo/oda-na-radost.musicxml");
+  await expect(page.locator("#player-card")).toBeVisible();
+  await expect(page.locator("#status.error")).toContainText("could not be saved");
   await expect(page.locator("#library")).toBeHidden();
 });

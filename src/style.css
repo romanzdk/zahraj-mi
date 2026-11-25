@@ -313,6 +313,14 @@ select:focus-visible {
   cursor: pointer;
 }
 
+.library[inert] {
+  opacity: 0.55;
+}
+
+.library .btn.small {
+  min-height: 44px;
+}
+
 .song-open:hover {
   border-color: var(--accent);
 }
