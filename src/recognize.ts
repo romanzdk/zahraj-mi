@@ -1,4 +1,5 @@
 import { createRecognizer, type Backend, type Progress, type RecognizeResult, type Recognizer } from "homr-web";
+import { isIos } from "./device";
 
 export type RecognizeStep =
   | { kind: "starting" }
@@ -20,6 +21,7 @@ const MAX_SIDE = 3000;
 const RETRY_ERRORS = new Set(["worker_lost", "engine_failed", "start_failed"]);
 
 let recognizer: { prefer: Backend; ready: Promise<Recognizer> } | null = null;
+let releasing: Promise<void> = Promise.resolve();
 const log: string[] = [];
 
 function note(line: string): void {
@@ -27,14 +29,15 @@ function note(line: string): void {
   if (log.length > 40) log.shift();
 }
 
-function getRecognizer(prefer: Backend): Promise<Recognizer> {
+async function getRecognizer(prefer: Backend): Promise<Recognizer> {
   if (recognizer?.prefer !== prefer) {
-    const previous = recognizer;
+    releaseRecognizer();
+    // A phone cannot hold two engines: the old worker must be gone before the next one starts.
+    await releasing;
     recognizer = {
       prefer,
       ready: createRecognizer({ baseUrl: `${import.meta.env.BASE_URL}models/`, prefer }),
     };
-    void previous?.ready.then((r) => r.dispose()).catch(() => undefined);
     recognizer.ready.then(
       (r) => note(`recognizer ready, backend ${r.backend}`),
       (err: unknown) => note(`recognizer failed to start: ${String(err)}`),
@@ -43,10 +46,10 @@ function getRecognizer(prefer: Backend): Promise<Recognizer> {
   return recognizer.ready;
 }
 
-function dropRecognizer(): void {
+function releaseRecognizer(): void {
   const current = recognizer;
   recognizer = null;
-  void current?.ready.then((r) => r.dispose()).catch(() => undefined);
+  if (current) releasing = current.ready.then((r) => r.dispose()).catch(() => undefined);
 }
 
 /** Large phone photos slow the engine down without helping it, so they are scaled down first. */
@@ -88,7 +91,7 @@ async function attempt(image: Blob, prefer: Backend, onStep: (step: RecognizeSte
   try {
     rec = await getRecognizer(prefer);
   } catch (err) {
-    dropRecognizer();
+    releaseRecognizer();
     return { ok: false, error: "start_failed", log: String(err) } as unknown as RecognizeResult;
   }
   const input = await prepare(image);
@@ -99,22 +102,19 @@ async function attempt(image: Blob, prefer: Backend, onStep: (step: RecognizeSte
   if (!result.ok) {
     const tail = result.log.trim().split("\n").slice(-6).join("\n");
     if (tail) note(tail);
-    if (RETRY_ERRORS.has(result.error)) dropRecognizer();
+    if (RETRY_ERRORS.has(result.error)) releaseRecognizer();
   }
   return result;
 }
 
-/**
- * Reads the notes in an image. If the engine breaks (seen on iPhone Safari with WebGPU),
- * it tries once more with a fresh engine on WebAssembly only.
- */
+/** Reads the notes in an image. If the engine breaks, it tries once more with a fresh engine on WebAssembly. */
 export async function recognizeImage(image: Blob, onStep: (step: RecognizeStep) => void): Promise<string> {
   onStep({ kind: "starting" });
   lastStage = "";
   let result = await attempt(image, recognizer?.prefer ?? preferredBackend(), onStep);
   if (!result.ok && RETRY_ERRORS.has(result.error)) {
     onStep({ kind: "retrying" });
-    result = await attempt(image, "wasm-threads", onStep);
+    result = await attempt(image, globalThis.crossOriginIsolated ? "wasm-threads" : "wasm", onStep);
   }
   if (!result.ok) {
     const message = result.log.trim().split("\n").at(-1) || result.error;
@@ -123,10 +123,14 @@ export async function recognizeImage(image: Blob, onStep: (step: RecognizeStep) 
   return result.musicXml;
 }
 
-/** `?backend=wasm` (or webgpu, wasm-threads) forces an engine, to compare them on one device. */
+/**
+ * WebGPU, except on iPhone and iPad: there Safari runs out of memory starting it ("RangeError: Out of
+ * memory"), while WebAssembly works. `?backend=wasm|wasm-threads|webgpu` forces one, to compare.
+ */
 function preferredBackend(): Backend {
   const asked = new URLSearchParams(location.search).get("backend");
-  return asked === "wasm" || asked === "wasm-threads" || asked === "webgpu" ? asked : "webgpu";
+  if (asked === "wasm" || asked === "wasm-threads" || asked === "webgpu") return asked;
+  return isIos ? "wasm" : "webgpu";
 }
 
 export function diagnostics(): string {

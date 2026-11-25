@@ -10,8 +10,37 @@
     />
     <meta name="theme-color" content="#1f5f5b" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <meta property="og:title" content="Zahraj mi" />
+    <link rel="canonical" href="https://romanzdk.github.io/zahraj-mi/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Zahraj mi" />
+    <meta property="og:locale" content="cs_CZ" />
+    <meta property="og:url" content="https://romanzdk.github.io/zahraj-mi/" />
+    <meta property="og:title" content="Zahraj mi – noty z fotky jako melodie ke zpívání" />
     <meta property="og:description" content="Vyfoť noty, pusť si melodii a zpívej. Zdarma a bez serveru." />
+    <meta property="og:image" content="https://romanzdk.github.io/zahraj-mi/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Zahraj mi: noty Ódy na radost připravené k rozpoznání a přehrání" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Zahraj mi",
+        "url": "https://romanzdk.github.io/zahraj-mi/",
+        "description": "Vyfoť noty, aplikace je přečte a zahraje melodii, do které můžeš zpívat. Zdarma, bez registrace, vše běží přímo v prohlížeči.",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript and WebAssembly",
+        "inLanguage": ["cs", "en"],
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CZK" },
+        "image": "https://romanzdk.github.io/zahraj-mi/og.png",
+        "screenshot": "https://romanzdk.github.io/zahraj-mi/og.png",
+        "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "codeRepository": "https://github.com/romanzdk/zahraj-mi"
+      }
+    </script>
     <script>
       // Outside Chromium and Firefox, coi-serviceworker relies on COEP "credentialless", which Safari
       // lacks: there it never isolates the page and only reloads it, so in Safari it is off and removed.
@@ -21,9 +50,29 @@
         shouldDeregister: function () { return !chromiumOrFirefox; },
       };
     </script>
+    <script>
+      // Before first paint, so a saved dark choice does not flash light.
+      (function () {
+        var pref = "system";
+        try { pref = localStorage.getItem("theme") || "system"; } catch (e) {}
+        var dark = pref === "dark" || (pref === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
     <script src="./coi-serviceworker.js"></script>
   </head>
   <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16" /></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></symbol>
+      <symbol id="flag-cs" viewBox="0 0 30 20"><rect width="30" height="10" fill="#fff" /><rect y="10" width="30" height="10" fill="#d7141a" /><path d="M0 0l15 10L0 20z" fill="#11457e" /></symbol>
+      <symbol id="flag-en" viewBox="0 0 60 30"><clipPath id="flag-en-t"><path d="M30 15h30v15zv15H0zH0V0zV0h30z" /></clipPath><path d="M0 0v30h60V0z" fill="#012169" /><path d="M0 0l60 30m0-30L0 30" stroke="#fff" stroke-width="6" /><path d="M0 0l60 30m0-30L0 30" clip-path="url(#flag-en-t)" stroke="#C8102E" stroke-width="4" /><path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10" /><path d="M30 0v30M0 15h60" stroke="#C8102E" stroke-width="6" /></symbol>
+    </svg>
     <header class="top">
       <div class="brand">
         <img src="./favicon.svg" alt="" width="36" height="36" />
@@ -32,23 +81,32 @@
           <p data-i18n="tagline"></p>
         </div>
       </div>
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="cs">CS</button>
-        <button type="button" data-lang="en">EN</button>
+      <div class="tools">
+        <div class="seg" role="group" aria-label="Language">
+          <button type="button" data-lang="cs" title="Čeština"><svg class="flag" aria-hidden="true"><use href="#flag-cs" /></svg><span class="seg-text">CS</span></button>
+          <button type="button" data-lang="en" title="English"><svg class="flag" aria-hidden="true"><use href="#flag-en" /></svg><span class="seg-text">EN</span></button>
+        </div>
+        <div class="seg" role="group" data-i18n-label="theme.label">
+          <button type="button" data-theme-choice="light" data-i18n-label="theme.light"><svg class="icon" aria-hidden="true"><use href="#i-sun" /></svg></button>
+          <button type="button" data-theme-choice="dark" data-i18n-label="theme.dark"><svg class="icon" aria-hidden="true"><use href="#i-moon" /></svg></button>
+          <button type="button" data-theme-choice="system" data-i18n-label="theme.system"><svg class="icon" aria-hidden="true"><use href="#i-monitor" /></svg></button>
+        </div>
       </div>
     </header>
 
     <main>
       <section class="card" id="input-card">
-        <h2 data-i18n="step1.title"></h2>
+        <h2><span class="step" aria-hidden="true">1</span><span data-i18n="step1.title"></span></h2>
         <div id="dropzone" class="dropzone">
           <div class="actions">
             <label class="btn primary">
               <input id="camera-input" type="file" accept="image/*" capture="environment" hidden />
+              <svg class="icon" aria-hidden="true"><use href="#i-camera" /></svg>
               <span data-i18n="step1.camera"></span>
             </label>
             <label class="btn">
               <input id="file-input" type="file" accept="image/*" hidden />
+              <svg class="icon" aria-hidden="true"><use href="#i-upload" /></svg>
               <span data-i18n="step1.upload"></span>
             </label>
           </div>
@@ -63,6 +121,11 @@
           </p>
         </div>
         <p class="tip" data-i18n="step1.tips"></p>
+        <div id="library" class="library" hidden>
+          <h3 data-i18n="library.title"></h3>
+          <ul id="library-list"></ul>
+          <p id="library-ios" class="tip" data-i18n="library.iosNote" hidden></p>
+        </div>
 
         <div id="preview" class="preview" hidden>
           <img id="preview-img" alt="" />
@@ -100,7 +163,7 @@
       </section>
 
       <section class="card" id="player-card" hidden>
-        <h2 data-i18n="step2.title"></h2>
+        <h2><span class="step" aria-hidden="true">2</span><span data-i18n="step2.title"></span></h2>
         <p class="muted" id="melody-info"></p>
 
         <div class="transport">
@@ -164,13 +227,36 @@
     </main>
 
     <footer>
-      <p data-i18n="footer.privacy"></p>
-      <p>
-        <a href="https://github.com/romanzdk/zahraj-mi" data-i18n="footer.source"></a>
-        · <span data-i18n="footer.engine"></span>
-      </p>
+      <p class="privacy"><svg class="icon" aria-hidden="true"><use href="#i-lock" /></svg><span data-i18n="footer.privacy"></span></p>
+      <div class="cta">
+        <div>
+          <strong data-i18n="footer.ctaTitle"></strong>
+          <span data-i18n="footer.ctaText"></span>
+        </div>
+        <a class="btn primary" href="mailto:romanzdk@gmail.com?subject=Zahraj%20mi">
+          <svg class="icon" aria-hidden="true"><use href="#i-mail" /></svg>
+          <span data-i18n="footer.ctaButton"></span>
+        </a>
+      </div>
+      <div class="meta">
+        <p><span data-i18n="footer.author"></span> <strong>Roman Žydyk</strong> · <a href="https://romanzdk.com">romanzdk.com</a></p>
+        <p class="meta-links">
+          <a href="https://github.com/romanzdk/zahraj-mi" data-i18n="footer.source"></a>
+          <span data-i18n="footer.engine"></span>
+          <span>AGPL-3.0</span>
+        </p>
+      </div>
     </footer>
 
     <script type="module" src="/src/main.ts"></script>
+    <!-- crossorigin: COEP require-corp (Chromium, Firefox) blocks count.js, which sends no CORP header.
+         integrity: a third-party script must not be able to change and read the user's images. -->
+    <script
+      data-goatcounter="https://zahrajmi.goatcounter.com/count"
+      async
+      crossorigin="anonymous"
+      integrity="sha384-nRw6qfbWyJha9LhsOtSb2YJDyZdKvvCFh0fJYlkquSFjUxp9FVNugbfy8q1jdxI+"
+      src="https://gc.zgo.at/count.v4.js"
+    ></script>
   </body>
 </html>

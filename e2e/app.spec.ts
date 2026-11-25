@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { similarity } from "./similarity";
 
 // Ode to Joy as written in public/demo/oda-na-radost.musicxml.
@@ -63,6 +64,7 @@ test("recognizes notes from the demo image in the browser", async ({ page }) => 
   const score = similarity(got, EXPECTED);
   console.log(`recognized ${got.length} notes, similarity ${score.toFixed(3)}: ${got.join(" ")}`);
   expect(score).toBeGreaterThanOrEqual(0.9);
+  await expect(page.locator("#library-list li img.song-thumb")).toHaveAttribute("src", /^data:image\/jpeg/);
 });
 
 test("tells the user when the page reloaded during recognition", async ({ page }) => {
@@ -73,4 +75,93 @@ test("tells the user when the page reloaded during recognition", async ({ page }
   await expect(page.locator("#status-log")).toHaveText(/last step models/);
   await page.reload();
   await expect(page.locator("#status")).toBeHidden();
+});
+
+test("theme and language switches stick after reload", async ({ page }) => {
+  await open(page);
+  await page.locator("[data-theme-choice=dark]").click();
+  await page.locator("[data-lang=en]").click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("[data-theme-choice=dark]")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".cta .btn")).toHaveText("Contact me");
+  await expect(page.locator(".cta .btn")).toHaveAttribute("href", /^mailto:romanzdk@gmail\.com/);
+
+  await page.locator("[data-theme-choice=light]").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.locator("[data-theme-choice=system]").click();
+  await expect(page.locator("[data-theme-choice=system]")).toHaveAttribute("aria-pressed", "true");
+});
+
+test("stop stays on screen while the score scrolls with the music", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page);
+  await page.locator("#demo-button").click();
+  await page.locator("#score svg").first().waitFor();
+  await page.locator("#tempo").fill("220");
+  await page.locator("#play-button").click();
+  await page.waitForFunction(() => scrollY > 300);
+  await expect(page.locator("#play-button")).toBeInViewport();
+  await page.locator("#play-button").click();
+  await expect(page.locator("#play-button")).not.toHaveClass(/playing/);
+});
+
+test("remembers an opened song with its settings after reload", async ({ page }) => {
+  await open(page);
+  await page.locator("[data-lang=en]").click();
+  await page.locator("#demo-button").click();
+  await page.locator("#score svg").first().waitFor();
+  await expect(page.locator("#library")).toBeHidden();
+
+  await page.locator("#xml-input").setInputFiles("public/demo/oda-na-radost.musicxml");
+  await page.locator("#tempo").fill("77");
+  await page.locator("#tempo").dispatchEvent("change");
+  await page.locator("#transpose-up").click();
+  await page.locator("#loop").check();
+  await page.reload();
+
+  const songs = page.locator("#library-list li");
+  await expect(songs).toHaveCount(1);
+  await songs.first().locator(".song-open").click();
+  await expect(page.locator("#player-card")).toBeVisible();
+  await expect(page.locator("#tempo")).toHaveValue("77");
+  await expect(page.locator("#transpose-value")).toHaveText("+1");
+  await expect(page.locator("#loop")).toBeChecked();
+
+  await page.locator("#xml-input").setInputFiles("public/demo/oda-na-radost.musicxml");
+  await expect(songs).toHaveCount(1);
+  await expect(page.locator("#tempo")).toHaveValue("77");
+  await expect(page.locator("#status-text")).toContainText("saved settings");
+
+  page.once("dialog", (d) => void d.accept("Ode"));
+  await songs.first().locator(".song-rename").click();
+  await expect(songs.first().locator(".song-name")).toHaveText("Ode");
+  await expect(songs.first().locator(".song-rename")).toBeFocused();
+  page.once("dialog", (d) => void d.dismiss());
+  await songs.first().locator(".song-delete").click();
+  await expect(songs).toHaveCount(1);
+  page.once("dialog", (d) => void d.accept());
+  await songs.first().locator(".song-delete").click();
+  await expect(page.locator("#library")).toBeHidden();
+});
+
+test("names an untitled MusicXML song after its file", async ({ page }) => {
+  await open(page);
+  const xml = readFileSync("public/demo/oda-na-radost.musicxml", "utf8").replace(/<work>.*<\/work>/, "");
+  await page.locator("#xml-input").setInputFiles({ name: "Tichá noc.musicxml", mimeType: "text/xml", buffer: Buffer.from(xml) });
+  await expect(page.locator("#library-list .song-name")).toHaveText("Tichá noc");
+});
+
+test("says so when the browser will not store the song", async ({ page }) => {
+  await open(page);
+  await page.locator("[data-lang=en]").click();
+  await page.evaluate(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException("denied", "SecurityError");
+    };
+  });
+  await page.locator("#xml-input").setInputFiles("public/demo/oda-na-radost.musicxml");
+  await expect(page.locator("#player-card")).toBeVisible();
+  await expect(page.locator("#status.error")).toContainText("could not be saved");
+  await expect(page.locator("#library")).toBeHidden();
 });

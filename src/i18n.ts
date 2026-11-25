@@ -2,7 +2,7 @@ export type Lang = "cs" | "en";
 
 const cs = {
   tagline: "Vyfoť noty, pusť si melodii a zpívej.",
-  "step1.title": "1. Noty",
+  "step1.title": "Noty",
   "step1.camera": "Vyfotit noty",
   "step1.upload": "Nahrát obrázek",
   "step1.drop": "nebo sem přetáhni obrázek (JPG, PNG)",
@@ -25,8 +25,17 @@ const cs = {
   "status.noNotes": "V obrázku jsem nenašel žádné noty. Zkus ostřejší fotku nebo jen jednu píseň.",
   "status.error": "Rozpoznání se nepovedlo: {msg}",
   "status.badFile": "Soubor se nepodařilo načíst: {msg}",
+  "status.notSaved": "Píseň se nepodařilo uložit v prohlížeči (paměť je plná nebo ukládání blokované). Hrát ji můžeš dál. Pokud máš uložených hodně písní, pár starších smaž.",
+  "status.savedSettings": "Tuhle píseň už máš uloženou, načetl jsem tvoje nastavení.",
+  "library.title": "Moje písně",
+  "library.defaultName": "Píseň {date}",
+  "library.rename": "Přejmenovat",
+  "library.renamePrompt": "Název písně",
+  "library.delete": "Smazat",
+  "library.deleteConfirm": "Smazat píseň „{name}“?",
+  "library.iosNote": "Písně jsou uložené jen v tomto prohlížeči. Na iPhonu si stránku přidej na plochu, jinak je Safari může po týdnu bez návštěvy smazat.",
   "status.unsupported": "Tenhle prohlížeč neumí spustit rozpoznávání not. Zkus aktuální Chrome, Edge, Firefox nebo Safari.",
-  "step2.title": "2. Přehrát a zpívat",
+  "step2.title": "Přehrát a zpívat",
   "player.play": "Přehrát",
   "player.stop": "Zastavit",
   "player.pitch": "Dej tón",
@@ -55,7 +64,7 @@ const cs = {
   "player.countBeat": "Počítám: {n}",
   "download.midi": "Stáhnout MIDI",
   "download.musicxml": "Stáhnout MusicXML",
-  "footer.privacy": "Vše běží ve tvém prohlížeči: obrázky ani noty se nikam neposílají (kromě čtení pomocí AI pro pozvané).",
+  "footer.privacy": "Vše běží ve tvém prohlížeči: obrázky ani noty se nikam neposílají (kromě čtení pomocí AI pro pozvané). Návštěvnost počítá GoatCounter, bez cookies.",
   "ai.have": "Mám pozvánku na čtení pomocí AI",
   "ai.use": "Použít",
   "ai.logout": "Odhlásit",
@@ -69,11 +78,19 @@ const cs = {
   "ai.error": "AI noty nepřečetla: {msg}",
   "footer.source": "Zdrojový kód",
   "footer.engine": "Rozpoznávání not: homr (open source)",
+  "footer.author": "Vytvořil",
+  "footer.ctaTitle": "Chcete rychlejší verzi s kvalitnějším rozpoznáváním?",
+  "footer.ctaText": "Rozpoznávání na serveru, víc hlasů, akordy. Ozvěte se mi.",
+  "footer.ctaButton": "Kontaktujte mě",
+  "theme.label": "Vzhled",
+  "theme.light": "Světlý vzhled",
+  "theme.dark": "Tmavý vzhled",
+  "theme.system": "Vzhled podle systému",
 };
 
 const en: Record<keyof typeof cs, string> = {
   tagline: "Snap your sheet music, play the melody and sing along.",
-  "step1.title": "1. Sheet music",
+  "step1.title": "Sheet music",
   "step1.camera": "Take a photo",
   "step1.upload": "Upload image",
   "step1.drop": "or drop an image here (JPG, PNG)",
@@ -96,8 +113,17 @@ const en: Record<keyof typeof cs, string> = {
   "status.noNotes": "No notes found in the image. Try a sharper photo or just one song.",
   "status.error": "Recognition failed: {msg}",
   "status.badFile": "Could not open the file: {msg}",
+  "status.notSaved": "The song could not be saved in this browser (storage is full or blocked). You can still play it. If you have saved many songs, delete a few older ones.",
+  "status.savedSettings": "You already saved this song, so your saved settings are back.",
+  "library.title": "My songs",
+  "library.defaultName": "Song {date}",
+  "library.rename": "Rename",
+  "library.renamePrompt": "Song name",
+  "library.delete": "Delete",
+  "library.deleteConfirm": "Delete the song “{name}”?",
+  "library.iosNote": "Songs are kept in this browser only. On iPhone, add this page to your Home Screen, otherwise Safari may clear them after a week without a visit.",
   "status.unsupported": "This browser cannot run note recognition. Try a current Chrome, Edge, Firefox or Safari.",
-  "step2.title": "2. Play and sing",
+  "step2.title": "Play and sing",
   "player.play": "Play",
   "player.stop": "Stop",
   "player.pitch": "Starting note",
@@ -126,7 +152,7 @@ const en: Record<keyof typeof cs, string> = {
   "player.countBeat": "Counting: {n}",
   "download.midi": "Download MIDI",
   "download.musicxml": "Download MusicXML",
-  "footer.privacy": "Everything runs in your browser: images and notes are never uploaded (except AI reading for invited users).",
+  "footer.privacy": "Everything runs in your browser: images and notes are never uploaded (except AI reading for invited users). Visits are counted by GoatCounter, without cookies.",
   "ai.have": "I have an invite for AI reading",
   "ai.use": "Use",
   "ai.logout": "Sign out",
@@ -140,6 +166,14 @@ const en: Record<keyof typeof cs, string> = {
   "ai.error": "AI could not read the notes: {msg}",
   "footer.source": "Source code",
   "footer.engine": "Note recognition: homr (open source)",
+  "footer.author": "Made by",
+  "footer.ctaTitle": "Want a faster version with better recognition?",
+  "footer.ctaText": "Server-side recognition, more voices, chords. Get in touch.",
+  "footer.ctaButton": "Contact me",
+  "theme.label": "Appearance",
+  "theme.light": "Light theme",
+  "theme.dark": "Dark theme",
+  "theme.system": "Match system theme",
 };
 
 export type Key = keyof typeof cs;
@@ -180,5 +214,10 @@ export function applyTranslations(root: ParentNode = document): void {
   document.documentElement.lang = lang;
   root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
     el.textContent = t(el.dataset.i18n as Key);
+  });
+  root.querySelectorAll<HTMLElement>("[data-i18n-label]").forEach((el) => {
+    const text = t(el.dataset.i18nLabel as Key);
+    el.setAttribute("aria-label", text);
+    if (el.tagName === "BUTTON") el.title = text;
   });
 }
