@@ -31,6 +31,15 @@ function pianoUrls(): Record<string, string> {
   return urls;
 }
 
+type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
+
+/** iPhone silent mode mutes Web Audio unless the page says it plays media. */
+function startAudio(): Promise<void> {
+  const session = (navigator as AudioSessionNavigator).audioSession;
+  if (session && session.type !== "playback") session.type = "playback";
+  return Tone.start();
+}
+
 export class Player {
   private voices = new Map<InstrumentId, Voice>();
   private click: Tone.MembraneSynth | null = null;
@@ -79,14 +88,14 @@ export class Player {
 
   /** Plays one pitch, e.g. the starting note to sing from. */
   async playPitch(midi: number, instrument: InstrumentId, seconds = 1.2): Promise<void> {
-    await Tone.start();
+    await startAudio();
     const v = await this.voice(instrument);
     v.triggerAttackRelease(Tone.Frequency(midi, "midi").toFrequency(), seconds);
   }
 
   async play(melody: Melody, opts: PlayOptions): Promise<void> {
     this.stop();
-    await Tone.start();
+    await startAudio();
     const v = await this.voice(opts.instrument);
     if (!this.click) {
       this.click = new Tone.MembraneSynth({ octaves: 2, pitchDecay: 0.01 }).toDestination();

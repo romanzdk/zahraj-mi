@@ -377,5 +377,8 @@ document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((b) => {
   b.addEventListener("click", () => renderLanguage(b.dataset.lang as Lang));
 });
 
+const isIos = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+$("silent-hint").hidden = !isIos;
+
 applyTranslations();
 renderLanguage(getLang());
