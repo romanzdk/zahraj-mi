@@ -238,6 +238,22 @@ select:focus-visible {
   accent-color: var(--accent);
 }
 
+.details {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.details pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg);
+}
+
 .spinner {
   display: none;
   width: 18px;
@@ -248,7 +264,23 @@ select:focus-visible {
   animation: spin 0.9s linear infinite;
 }
 
-.status.working .spinner {
+.status.working .details {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.details pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.spinner {
   display: inline-block;
 }
 

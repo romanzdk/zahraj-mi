@@ -4,7 +4,7 @@ import { applyTranslations, getLang, setLang, t, type Key, type Lang } from "./i
 import { melodyRange, midiToName, parseMusicXml, type Melody } from "./melody";
 import { melodyToMidi } from "./midi";
 import { Player, type InstrumentId } from "./player";
-import { RecognizeError, recognizeImage, type RecognizeStep } from "./recognize";
+import { diagnostics, RecognizeError, recognizeImage, type RecognizeStep } from "./recognize";
 import { ScoreView } from "./score";
 import { fitToVoice, VOICES } from "./voice";
 
@@ -23,6 +23,9 @@ const els = {
   status: $("status"),
   statusText: $("status-text"),
   statusProgress: $<HTMLProgressElement>("status-progress"),
+  statusDetails: $<HTMLDetailsElement>("status-details"),
+  statusLog: $("status-log"),
+  copyLog: $<HTMLButtonElement>("copy-log"),
   playerCard: $("player-card"),
   melodyInfo: $("melody-info"),
   playButton: $<HTMLButtonElement>("play-button"),
@@ -58,8 +61,11 @@ const state = {
   statusKey: null as { key: Key; vars: Record<string, string | number>; isError: boolean } | null,
 };
 
-function setStatus(key: Key | null, vars: Record<string, string | number> = {}, isError = false): void {
+function setStatus(key: Key | null, vars: Record<string, string | number> = {}, isError = false, details = ""): void {
   state.statusKey = key ? { key, vars, isError } : null;
+  els.statusDetails.hidden = !details;
+  els.statusDetails.open = false;
+  els.statusLog.textContent = details;
   renderStatus();
 }
 
@@ -122,7 +128,7 @@ async function runRecognition(): Promise<void> {
       els.statusProgress.hidden = false;
       els.statusProgress.value = (100 * step.done) / Math.max(1, step.total);
     } else {
-      setStatus("status.starting");
+      setStatus(step.kind === "retrying" ? "status.retrying" : "status.starting");
       els.statusProgress.hidden = true;
     }
     els.statusText.textContent += ` ${elapsed}`;
@@ -134,8 +140,9 @@ async function runRecognition(): Promise<void> {
     setStatus("status.done");
   } catch (err) {
     setBusy(false);
-    if (err instanceof RecognizeError && err.code === "not_music") setStatus("status.noNotes", {}, true);
-    else setStatus("status.error", { msg: err instanceof Error ? err.message : String(err) }, true);
+    const details = err instanceof RecognizeError ? err.details : `${String(err)}\n${diagnostics()}`;
+    if (err instanceof RecognizeError && err.code === "not_music") setStatus("status.noNotes", {}, true, details);
+    else setStatus("status.error", { msg: err instanceof Error ? err.message : String(err) }, true, details);
     console.error(err);
   } finally {
     window.clearInterval(tick);
@@ -144,7 +151,7 @@ async function runRecognition(): Promise<void> {
 
 async function loadMusicXml(xml: string): Promise<void> {
   const melody = parseMusicXml(xml);
-  if (melody.notes.length === 0) throw new RecognizeError("not_music", "no notes");
+  if (melody.notes.length === 0) throw new RecognizeError("not_music", "no notes", "");
   player.stop();
   state.musicXml = xml;
   state.melody = melody;
@@ -313,6 +320,11 @@ els.demoButton.addEventListener("click", async () => {
 });
 
 els.recognizeButton.addEventListener("click", () => void runRecognition());
+els.copyLog.addEventListener("click", () => {
+  void navigator.clipboard?.writeText(els.statusLog.textContent ?? "").then(() => {
+    els.copyLog.textContent = t("status.copied");
+  });
+});
 els.resetButton.addEventListener("click", resetInput);
 
 els.playButton.addEventListener("click", () => {

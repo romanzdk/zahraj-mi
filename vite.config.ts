@@ -7,6 +7,7 @@ const isolation = {
 
 export default defineConfig({
   base: process.env.BASE_PATH ?? "/",
+  define: { __APP_VERSION__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 7) ?? "dev") },
   optimizeDeps: {
     exclude: ["homr-web", "onnxruntime-web"],
     include: ["homr-web > @techstark/opencv-js"],

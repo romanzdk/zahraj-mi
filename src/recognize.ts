@@ -1,7 +1,8 @@
-import { createRecognizer, type Progress, type Recognizer } from "homr-web";
+import { createRecognizer, type Backend, type Progress, type RecognizeResult, type Recognizer } from "homr-web";
 
 export type RecognizeStep =
   | { kind: "starting" }
+  | { kind: "retrying" }
   | { kind: "models"; loadedMb: number; totalMb: number }
   | { kind: "reading"; done: number; total: number };
 
@@ -9,32 +10,54 @@ export class RecognizeError extends Error {
   constructor(
     readonly code: string,
     message: string,
+    readonly details: string,
   ) {
     super(message);
   }
 }
 
 const MAX_SIDE = 3000;
-let recognizer: Promise<Recognizer> | null = null;
+const RETRY_ERRORS = new Set(["worker_lost", "engine_failed", "start_failed"]);
 
-function getRecognizer(): Promise<Recognizer> {
-  if (!recognizer) {
-    recognizer = createRecognizer({ baseUrl: `${import.meta.env.BASE_URL}models/` }).catch((err: unknown) => {
-      recognizer = null;
-      throw err;
-    });
+let recognizer: { prefer: Backend; ready: Promise<Recognizer> } | null = null;
+const log: string[] = [];
+
+function note(line: string): void {
+  log.push(`${new Date().toISOString().slice(11, 19)} ${line}`);
+  if (log.length > 40) log.shift();
+}
+
+function getRecognizer(prefer: Backend): Promise<Recognizer> {
+  if (recognizer?.prefer !== prefer) {
+    const previous = recognizer;
+    recognizer = {
+      prefer,
+      ready: createRecognizer({ baseUrl: `${import.meta.env.BASE_URL}models/`, prefer }),
+    };
+    void previous?.ready.then((r) => r.dispose()).catch(() => undefined);
+    recognizer.ready.then(
+      (r) => note(`recognizer ready, backend ${r.backend}`),
+      (err: unknown) => note(`recognizer failed to start: ${String(err)}`),
+    );
   }
-  return recognizer;
+  return recognizer.ready;
+}
+
+function dropRecognizer(): void {
+  const current = recognizer;
+  recognizer = null;
+  void current?.ready.then((r) => r.dispose()).catch(() => undefined);
 }
 
 /** Large phone photos slow the engine down without helping it, so they are scaled down first. */
-async function prepare(image: Blob): Promise<Blob | ImageBitmap> {
+async function prepare(image: Blob): Promise<ImageBitmap> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(image, { imageOrientation: "from-image" });
   } catch {
-    throw new RecognizeError("bad_input", "image could not be decoded");
+    throw new RecognizeError("bad_input", "image could not be decoded", diagnostics());
   }
+  note(`image ${bitmap.width}×${bitmap.height}`);
   const scale = MAX_SIDE / Math.max(bitmap.width, bitmap.height);
   if (scale >= 1) return bitmap;
   const resized = await createImageBitmap(bitmap, {
@@ -54,26 +77,52 @@ function toStep(p: Progress): RecognizeStep {
   return { kind: "starting" };
 }
 
-export async function recognizeImage(
-  image: Blob,
-  onStep: (step: RecognizeStep) => void,
-  signal?: AbortSignal,
-): Promise<string> {
-  onStep({ kind: "starting" });
-  const [rec, input] = await Promise.all([getRecognizer(), prepare(image)]);
-  const result = await rec.recognizePage(input, {
-    ocr: false,
-    signal,
-    onProgress: (p) => onStep(toStep(p)),
-  });
-  if (input instanceof ImageBitmap) input.close();
+async function attempt(image: Blob, prefer: Backend, onStep: (step: RecognizeStep) => void): Promise<RecognizeResult> {
+  let rec: Recognizer;
+  try {
+    rec = await getRecognizer(prefer);
+  } catch (err) {
+    dropRecognizer();
+    return { ok: false, error: "start_failed", log: String(err) } as unknown as RecognizeResult;
+  }
+  const input = await prepare(image);
+  const started = performance.now();
+  const result = await rec.recognizePage(input, { ocr: false, onProgress: (p) => onStep(toStep(p)) });
+  input.close();
+  note(`recognize on ${rec.backend}: ${result.ok ? "ok" : result.error} after ${Math.round((performance.now() - started) / 1000)} s`);
   if (!result.ok) {
-    if (result.error === "worker_lost") {
-      recognizer = null;
-      void rec.dispose();
-    }
-    const lastLines = result.log.trim().split("\n").slice(-3).join(" ");
-    throw new RecognizeError(result.error, lastLines || result.error);
+    const tail = result.log.trim().split("\n").slice(-6).join("\n");
+    if (tail) note(tail);
+    if (RETRY_ERRORS.has(result.error)) dropRecognizer();
+  }
+  return result;
+}
+
+/**
+ * Reads the notes in an image. If the engine breaks (seen on iPhone Safari with WebGPU),
+ * it tries once more with a fresh engine on WebAssembly only.
+ */
+export async function recognizeImage(image: Blob, onStep: (step: RecognizeStep) => void): Promise<string> {
+  onStep({ kind: "starting" });
+  let result = await attempt(image, recognizer?.prefer ?? "webgpu", onStep);
+  if (!result.ok && RETRY_ERRORS.has(result.error)) {
+    onStep({ kind: "retrying" });
+    result = await attempt(image, "wasm-threads", onStep);
+  }
+  if (!result.ok) {
+    const message = result.log.trim().split("\n").at(-1) || result.error;
+    throw new RecognizeError(result.error, message, diagnostics());
   }
   return result.musicXml;
+}
+
+export function diagnostics(): string {
+  const nav = navigator as Navigator & { gpu?: unknown; deviceMemory?: number };
+  return [
+    `app ${__APP_VERSION__}`,
+    `ua ${navigator.userAgent}`,
+    `crossOriginIsolated ${String(globalThis.crossOriginIsolated)}`,
+    `webgpu ${nav.gpu ? "yes" : "no"}, cores ${navigator.hardwareConcurrency ?? "?"}, memory ${nav.deviceMemory ?? "?"} GB`,
+    ...log,
+  ].join("\n");
 }
