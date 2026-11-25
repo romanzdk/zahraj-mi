@@ -67,23 +67,23 @@ export class Player {
   }
 
   private voice(id: InstrumentId): Promise<Tone.Sampler> {
-    let v = this.voices.get(id);
-    if (!v) {
-      v = new Promise((resolve, reject) => {
-        const sampler = new Tone.Sampler({
-          urls: Object.fromEntries(SAMPLES[id].map((n) => [n.replace("s", "#"), `${n}.mp3`])),
-          baseUrl: `${import.meta.env.BASE_URL}samples/${id}/`,
-          ...(SOUND[id] ?? { volume: 0, release: 1 }),
-          onload: () => resolve(sampler),
-          onerror: (err) => {
-            sampler.dispose();
-            reject(err);
-          },
-        }).toDestination();
-      });
-      v.catch(() => this.voices.delete(id));
-      this.voices.set(id, v);
-    }
+    const cached = this.voices.get(id);
+    if (cached) return cached;
+    const v = new Promise<Tone.Sampler>((resolve, reject) => {
+      const sampler = new Tone.Sampler({
+        urls: Object.fromEntries(SAMPLES[id].map((n) => [n.replace("s", "#"), `${n}.mp3`])),
+        baseUrl: `${import.meta.env.BASE_URL}samples/${id}/`,
+        ...(SOUND[id] ?? { volume: 0, release: 1 }),
+        onload: () => resolve(sampler),
+        onerror: (err) => {
+          sampler.dispose();
+          reject(err);
+        },
+      }).toDestination();
+    });
+    // After reset() a newer load may hold this id; a late failure must not evict it.
+    v.catch(() => this.voices.get(id) === v && this.voices.delete(id));
+    this.voices.set(id, v);
     return v;
   }
 
@@ -174,7 +174,7 @@ export class Player {
    */
   reset(): void {
     this.stop();
-    for (const v of this.voices.values()) v.dispose();
+    for (const v of this.voices.values()) void v.then((s) => s.dispose(), () => undefined);
     this.voices.clear();
     this.click?.dispose();
     this.click = null;
