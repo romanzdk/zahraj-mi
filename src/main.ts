@@ -4,6 +4,7 @@ import { applyTranslations, getLang, setLang, t, type Key, type Lang } from "./i
 import { melodyRange, midiToName, parseMusicXml, type Melody } from "./melody";
 import { melodyToMidi } from "./midi";
 import { isIos } from "./device";
+import { deleteSong, listSongs, saveSong, updateSong, type Song, type SongSettings } from "./library";
 import { Player, type InstrumentId } from "./player";
 import { diagnostics, RecognizeError, recognizeImage, type RecognizeStep } from "./recognize";
 import { ScoreView } from "./score";
@@ -47,6 +48,8 @@ const els = {
   score: $("score"),
   downloadMidi: $<HTMLButtonElement>("download-midi"),
   downloadXml: $<HTMLButtonElement>("download-xml"),
+  library: $("library"),
+  libraryList: $<HTMLUListElement>("library-list"),
 };
 
 const player = new Player();
@@ -58,6 +61,7 @@ const state = {
   musicXml: "",
   melody: null as Melody | null,
   transpose: 0,
+  songId: null as string | null,
   busy: false,
   statusKey: null as { key: Key; vars: Record<string, string | number>; isError: boolean } | null,
 };
@@ -84,6 +88,7 @@ function setBusy(busy: boolean): void {
   els.recognizeButton.disabled = busy;
   els.resetButton.disabled = busy;
   els.demoButton.disabled = busy;
+  els.library.inert = busy;
   if (!busy) els.statusProgress.hidden = true;
   renderStatus();
 }
@@ -161,10 +166,12 @@ async function runRecognition(): Promise<void> {
   };
   try {
     storeRun(`started\n${diagnostics()}`);
-    const xml = await recognizeImage(state.image, showStep);
+    const image = state.image;
+    const xml = await recognizeImage(image, showStep);
     await loadMusicXml(xml);
     setBusy(false);
     setStatus("status.done");
+    remember(xml, image);
   } catch (err) {
     setBusy(false);
     const details = err instanceof RecognizeError ? err.details : `${String(err)}\n${diagnostics()}`;
@@ -184,6 +191,7 @@ async function loadMusicXml(xml: string): Promise<void> {
   state.musicXml = xml;
   state.melody = melody;
   state.transpose = 0;
+  state.songId = null;
   els.playerCard.dataset.pitches = melody.notes.map((n) => n.midi).join(",");
   els.voice.value = "";
   els.tempo.value = String(Math.round(melody.tempo));
@@ -217,6 +225,7 @@ function renderPlayer(): void {
 function setTranspose(value: number): void {
   state.transpose = Math.max(-24, Math.min(24, value));
   renderPlayer();
+  saveSettings();
   restartIfPlaying();
 }
 
@@ -282,6 +291,141 @@ function renderLanguage(lang: Lang): void {
   fillVoiceOptions();
   renderStatus();
   renderPlayer();
+  renderLibrary();
+}
+
+/** For small follow-up writes (settings, name, thumbnail): a failure must not interrupt singing, so it stays silent. */
+function store(write: () => void): void {
+  try {
+    write();
+  } catch {
+    // storage full or blocked
+  }
+}
+
+function currentSettings(): SongSettings {
+  return {
+    tempo: Number(els.tempo.value),
+    transpose: state.transpose,
+    voice: els.voice.value,
+    instrument: els.instrument.value,
+    from: Number(els.fromMeasure.value),
+    to: Number(els.toMeasure.value),
+    countIn: els.countIn.checked,
+    loop: els.loop.checked,
+  };
+}
+
+function applySettings(s: SongSettings): void {
+  els.tempo.value = String(s.tempo);
+  state.transpose = s.transpose;
+  els.voice.value = s.voice;
+  els.instrument.value = s.instrument;
+  els.fromMeasure.value = String(s.from);
+  els.toMeasure.value = String(s.to);
+  els.countIn.checked = s.countIn;
+  els.loop.checked = s.loop;
+  void player.preload(els.instrument.value as InstrumentId);
+  renderPlayer();
+}
+
+function saveSettings(): void {
+  const id = state.songId;
+  if (id) store(() => updateSong(id, { settings: currentSettings() }));
+}
+
+async function thumbnail(image: Blob): Promise<string | null> {
+  try {
+    const bitmap = await createImageBitmap(image);
+    const canvas = document.createElement("canvas");
+    canvas.width = 160;
+    canvas.height = Math.max(1, Math.round((160 * bitmap.height) / bitmap.width));
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    return canvas.toDataURL("image/jpeg", 0.7);
+  } catch {
+    return null;
+  }
+}
+
+/** Saves the song that was just loaded, or picks up the saved copy (and its settings) when the same notes come in again. */
+function remember(xml: string, image: Blob | null, fileName = ""): void {
+  const existing = listSongs().find((s) => s.xml === xml);
+  if (existing) {
+    state.songId = existing.id;
+    if (existing.settings) applySettings(existing.settings);
+    setStatus("status.savedSettings");
+    return;
+  }
+  const now = new Date();
+  const song: Song = {
+    id: `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+    name:
+      state.melody?.title ||
+      fileName ||
+      t("library.defaultName", { date: now.toLocaleString(getLang(), { dateStyle: "short", timeStyle: "short" }) }),
+    createdAt: now.getTime(),
+    xml,
+    thumb: null,
+    settings: currentSettings(),
+  };
+  try {
+    saveSong(song);
+  } catch {
+    setStatus("status.notSaved", {}, true);
+    return;
+  }
+  state.songId = song.id;
+  navigator.storage?.persist?.().catch(() => undefined);
+  renderLibrary();
+  // The thumbnail comes after the save, so a slow decode never holds back the song id and a full storage never costs the song.
+  if (image) {
+    void thumbnail(image).then((thumb) => {
+      if (!thumb) return;
+      store(() => updateSong(song.id, { thumb }));
+      renderLibrary();
+    });
+  }
+}
+
+const songTemplate = document.createElement("template");
+songTemplate.innerHTML =
+  '<li><button type="button" class="song-open"><img class="song-thumb" alt="" /><span class="song-text"><span class="song-name"></span><small class="muted"></small></span></button>' +
+  '<button type="button" class="btn small song-rename">✏️</button><button type="button" class="btn small song-delete">🗑️</button></li>';
+
+function renderLibrary(): void {
+  const songs = listSongs();
+  els.library.hidden = songs.length === 0;
+  els.libraryList.replaceChildren(
+    ...songs.map((song) => {
+      const li = (songTemplate.content.cloneNode(true) as DocumentFragment).firstElementChild as HTMLLIElement;
+      li.dataset.id = song.id;
+      const img = li.querySelector("img")!;
+      if (song.thumb) img.src = song.thumb;
+      else img.replaceWith(Object.assign(document.createElement("span"), { className: "song-thumb", textContent: "🎵" }));
+      li.querySelector(".song-name")!.textContent = song.name;
+      li.querySelector("small")!.textContent = new Date(song.createdAt).toLocaleDateString(getLang());
+      for (const [cls, key] of [["song-rename", "library.rename"], ["song-delete", "library.delete"]] as const) {
+        const b = li.querySelector(`.${cls}`)!;
+        b.setAttribute("aria-label", t(key));
+        b.setAttribute("title", t(key));
+      }
+      return li;
+    }),
+  );
+}
+
+async function openSong(song: Song): Promise<void> {
+  resetInput();
+  try {
+    await loadMusicXml(song.xml);
+  } catch (err) {
+    setStatus("status.badFile", { msg: err instanceof Error ? err.message : String(err) }, true);
+    return;
+  }
+  state.songId = song.id;
+  if (song.settings) applySettings(song.settings);
+  setStatus(null);
 }
 
 player.setEvents({
@@ -330,8 +474,10 @@ els.dropzone.addEventListener("drop", (e) => {
 
 async function openMusicXml(file: File): Promise<void> {
   try {
-    await loadMusicXml(await readMusicXmlFile(file));
+    const xml = await readMusicXmlFile(file);
+    await loadMusicXml(xml);
     setStatus(null);
+    remember(xml, null, file.name.replace(/\.(musicxml|xml|mxl)$/i, ""));
   } catch (err) {
     setStatus("status.badFile", { msg: err instanceof Error ? err.message : String(err) }, true);
   }
@@ -394,6 +540,31 @@ els.instrument.addEventListener("change", () => {
 });
 for (const el of [els.fromMeasure, els.toMeasure, els.countIn, els.loop]) el.addEventListener("change", restartIfPlaying);
 
+els.playerCard.addEventListener("change", saveSettings);
+
+els.libraryList.addEventListener("click", (e) => {
+  const button = (e.target as Element).closest("button");
+  const id = button?.closest("li")?.dataset.id;
+  const song = listSongs().find((s) => s.id === id);
+  if (!button || !song || state.busy) return;
+  if (button.classList.contains("song-open")) {
+    void openSong(song);
+    return;
+  }
+  if (button.classList.contains("song-rename")) {
+    const name = prompt(t("library.renamePrompt"), song.name)?.trim();
+    if (name) store(() => updateSong(song.id, { name }));
+  } else if (button.classList.contains("song-delete")) {
+    if (!confirm(t("library.deleteConfirm", { name: song.name }))) return;
+    store(() => deleteSong(song.id));
+    if (state.songId === song.id) state.songId = null;
+  }
+  const action = button.className.match(/song-\w+/)?.[0];
+  renderLibrary();
+  // The list is rebuilt, so keyboard focus goes back to the same button, or to the first song after a delete.
+  (els.libraryList.querySelector<HTMLElement>(`li[data-id="${song.id}"] .${action}`) ?? els.libraryList.querySelector<HTMLElement>(".song-open"))?.focus();
+});
+
 els.downloadMidi.addEventListener("click", () => {
   if (state.melody) download(melodyToMidi(state.melody, state.transpose, Number(els.tempo.value)), "audio/midi", "mid");
 });
@@ -442,6 +613,7 @@ systemDark.addEventListener("change", () => renderTheme(savedTheme()));
 renderTheme(savedTheme());
 
 $("silent-hint").hidden = !isIos;
+$("library-ios").hidden = !isIos;
 
 applyTranslations();
 renderLanguage(getLang());
