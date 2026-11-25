@@ -90,3 +90,16 @@ test("theme and language switches stick after reload", async ({ page }) => {
   await page.locator("[data-theme-choice=system]").click();
   await expect(page.locator("[data-theme-choice=system]")).toHaveAttribute("aria-pressed", "true");
 });
+
+test("stop stays on screen while the score scrolls with the music", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page);
+  await page.locator("#demo-button").click();
+  await page.locator("#score svg").first().waitFor();
+  await page.locator("#tempo").fill("220");
+  await page.locator("#play-button").click();
+  await page.waitForFunction(() => scrollY > 300);
+  await expect(page.locator("#play-button")).toBeInViewport();
+  await page.locator("#play-button").click();
+  await expect(page.locator("#play-button")).not.toHaveClass(/playing/);
+});

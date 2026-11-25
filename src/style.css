@@ -349,7 +349,14 @@ select:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
+  margin: 0 -8px 16px;
+  padding: 8px;
+  /* The score follows the playing note and scrolls the page, so Stop must stay on screen. */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-radius: 12px;
 }
 
 .btn.playing {
