@@ -21,7 +21,7 @@ Everything runs in your browser – free, no sign-up, and your images never leav
 - 🎚️ **Fits your voice.** Transpose by semitones or pick a voice type (bass, tenor, alto, soprano, child) and the melody moves into a comfortable range.
 - 👀 **See what was read.** The recognized score is shown with a cursor that follows the music, so mistakes are easy to spot.
 - 💾 **Take it with you.** Download the melody as MIDI (in your chosen key and tempo) or the score as MusicXML.
-- 🔒 **Private by design.** Note recognition runs on your device. No server, no account, no tracking of your images.
+- 🔒 **Private by design.** Note recognition runs on your device. No server, no account, no tracking of your images. Visits are counted anonymously with [GoatCounter](https://www.goatcounter.com/) (no cookies).
 - 🌍 Czech and English interface, light and dark mode, works on phones.
 
 ## How it works
@@ -79,6 +79,7 @@ Open <http://localhost:5173>. Other commands:
 
 The page needs [cross-origin isolation](https://web.dev/articles/coop-coep) for multi-threaded WebAssembly.
 The dev and preview servers send the headers; on GitHub Pages [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) adds them.
+Because of that, every cross-origin script needs `crossorigin="anonymous"` (the GoatCounter one does).
 
 ## Deployment
 
