@@ -18,6 +18,8 @@ export interface Melody {
   measureCount: number;
   /** Start of every measure in quarter notes. */
   measureStarts: number[];
+  /** End of the last measure (rests included), in quarter notes. */
+  length: number;
   /** True when the score had no time signature and it was guessed from the measure lengths. */
   timeGuessed: boolean;
 }
@@ -180,6 +182,7 @@ export function parseMusicXml(xml: string): Melody {
     beatType,
     measureCount: measures.length,
     measureStarts,
+    length: measureStart,
     timeGuessed: guessed !== null,
   };
 }

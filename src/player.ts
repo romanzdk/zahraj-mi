@@ -102,9 +102,10 @@ export class Player {
     const from = Math.max(0, Math.min(opts.fromMeasure, melody.measureCount - 1));
     const to = Math.max(from, Math.min(opts.toMeasure, melody.measureCount - 1));
     const sectionStart = melody.measureStarts[from] ?? 0;
-    const sectionEnd = melody.measureStarts[to + 1] ?? lastNoteEnd(melody);
+    const sectionEnd = melody.measureStarts[to + 1] ?? melody.length;
     const beatLength = 4 / melody.beatType;
-    const countInLength = opts.countIn ? melody.beatsPerMeasure * beatLength : 0;
+    // Before every repetition there is a breath: the count-in again, or one silent beat without it.
+    const leadIn = opts.countIn ? melody.beatsPerMeasure * beatLength : opts.loop ? beatLength : 0;
 
     if (opts.countIn) {
       for (let b = 0; b < melody.beatsPerMeasure; b++) {
@@ -117,7 +118,7 @@ export class Player {
 
     melody.notes.forEach((note, index) => {
       if (note.start < sectionStart - 1e-6 || note.start >= sectionEnd - 1e-6) return;
-      const at = (countInLength + note.start - sectionStart) * quarter;
+      const at = (leadIn + note.start - sectionStart) * quarter;
       const length = Math.max(0.05, Math.min(note.duration, sectionEnd - note.start) * quarter * 0.95);
       const freq = Tone.Frequency(note.midi + opts.transpose, "midi").toFrequency();
       transport.schedule((time) => {
@@ -126,10 +127,10 @@ export class Player {
       }, at);
     });
 
-    const total = (countInLength + sectionEnd - sectionStart) * quarter;
+    const total = (leadIn + sectionEnd - sectionStart) * quarter;
     if (opts.loop) {
       transport.loop = true;
-      transport.loopStart = opts.countIn ? countInLength * quarter : 0;
+      transport.loopStart = 0;
       transport.loopEnd = total;
     } else {
       transport.loop = false;
@@ -152,9 +153,4 @@ export class Player {
     for (const v of this.voices.values()) v.releaseAll();
     this.playing = false;
   }
-}
-
-function lastNoteEnd(melody: Melody): number {
-  const last = melody.notes[melody.notes.length - 1];
-  return last ? last.start + last.duration : 0;
 }

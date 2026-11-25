@@ -37,6 +37,7 @@ describe("parseMusicXml", () => {
     expect(m.beatType).toBe(4);
     expect(m.measureCount).toBe(2);
     expect(m.measureStarts).toEqual([0, 3]);
+    expect(m.length).toBe(6);
     expect(m.notes.map((n) => n.midi)).toEqual([60, 64, 67, 66]);
     expect(m.notes.map((n) => n.start)).toEqual([0, 1, 2, 3]);
     expect(m.notes[3].duration).toBe(2);
