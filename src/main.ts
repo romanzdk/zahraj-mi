@@ -3,6 +3,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { applyTranslations, getLang, setLang, t, type Key, type Lang } from "./i18n";
 import { melodyRange, midiToName, parseMusicXml, type Melody } from "./melody";
 import { melodyToMidi } from "./midi";
+import { isIos } from "./device";
 import { Player, type InstrumentId } from "./player";
 import { diagnostics, RecognizeError, recognizeImage, type RecognizeStep } from "./recognize";
 import { ScoreView } from "./score";
@@ -404,7 +405,6 @@ document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((b) => {
   b.addEventListener("click", () => renderLanguage(b.dataset.lang as Lang));
 });
 
-const isIos = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 $("silent-hint").hidden = !isIos;
 
 applyTranslations();
