@@ -1,21 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
+import { similarity } from "./similarity";
 
 // Ode to Joy as written in public/demo/oda-na-radost.musicxml.
 const EXPECTED = [
   71, 71, 72, 74, 74, 72, 71, 69, 67, 67, 69, 71, 71, 69, 69,
   71, 71, 72, 74, 74, 72, 71, 69, 67, 67, 69, 71, 69, 67, 67,
 ];
-
-function similarity(a: number[], b: number[]): number {
-  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array<number>(b.length).fill(0)]);
-  for (let j = 1; j <= b.length; j++) d[0][j] = j;
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    }
-  }
-  return 1 - d[a.length][b.length] / Math.max(a.length, b.length);
-}
 
 async function pitches(page: Page): Promise<number[]> {
   const raw = await page.locator("#player-card").getAttribute("data-pitches");
