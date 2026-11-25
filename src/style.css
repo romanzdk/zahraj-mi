@@ -244,6 +244,7 @@ footer {
 }
 
 .btn:focus-visible,
+.song-open:focus-visible,
 .link:focus-visible,
 input:focus-visible,
 select:focus-visible {
@@ -274,6 +275,71 @@ select:focus-visible {
   font-size: 0.9rem;
   color: var(--muted);
   margin: 12px 0 0;
+}
+
+.library h3 {
+  margin: 18px 0 8px;
+  font-size: 1rem;
+}
+
+.library ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.library li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.song-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.song-open:hover {
+  border-color: var(--accent);
+}
+
+.song-thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: top;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+}
+
+.song-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.song-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .preview img {

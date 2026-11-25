@@ -63,6 +63,7 @@ test("recognizes notes from the demo image in the browser", async ({ page }) => 
   const score = similarity(got, EXPECTED);
   console.log(`recognized ${got.length} notes, similarity ${score.toFixed(3)}: ${got.join(" ")}`);
   expect(score).toBeGreaterThanOrEqual(0.9);
+  await expect(page.locator("#library-list li img.song-thumb")).toHaveAttribute("src", /^data:image\/jpeg/);
 });
 
 test("tells the user when the page reloaded during recognition", async ({ page }) => {
@@ -102,4 +103,37 @@ test("stop stays on screen while the score scrolls with the music", async ({ pag
   await expect(page.locator("#play-button")).toBeInViewport();
   await page.locator("#play-button").click();
   await expect(page.locator("#play-button")).not.toHaveClass(/playing/);
+});
+
+test("remembers an opened song with its settings after reload", async ({ page }) => {
+  await open(page);
+  await page.locator("[data-lang=en]").click();
+  await page.locator("#demo-button").click();
+  await page.locator("#score svg").first().waitFor();
+  await expect(page.locator("#library")).toBeHidden();
+
+  await page.locator("#xml-input").setInputFiles("public/demo/oda-na-radost.musicxml");
+  await page.locator("#tempo").fill("77");
+  await page.locator("#tempo").dispatchEvent("change");
+  await page.locator("#transpose-up").click();
+  await page.locator("#loop").check();
+  await page.reload();
+
+  const songs = page.locator("#library-list li");
+  await expect(songs).toHaveCount(1);
+  await songs.first().locator(".song-open").click();
+  await expect(page.locator("#player-card")).toBeVisible();
+  await expect(page.locator("#tempo")).toHaveValue("77");
+  await expect(page.locator("#transpose-value")).toHaveText("+1");
+  await expect(page.locator("#loop")).toBeChecked();
+
+  await page.locator("#xml-input").setInputFiles("public/demo/oda-na-radost.musicxml");
+  await expect(songs).toHaveCount(1);
+  await expect(page.locator("#tempo")).toHaveValue("77");
+
+  page.once("dialog", (d) => void d.accept("Ode"));
+  await songs.first().locator(".song-rename").click();
+  await expect(songs.first().locator(".song-name")).toHaveText("Ode");
+  await songs.first().locator(".song-delete").click();
+  await expect(page.locator("#library")).toBeHidden();
 });
