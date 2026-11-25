@@ -154,6 +154,19 @@ export class Player {
     transport.start("+0.05");
   }
 
+  /**
+   * iPhone Safari can leave the old audio context silent after the photo picker or a heavy
+   * recognition run, even though it reports "running". A fresh context is what a reload gives.
+   */
+  reset(): void {
+    this.stop();
+    for (const v of this.voices.values()) v.dispose();
+    this.voices.clear();
+    this.click?.dispose();
+    this.click = null;
+    Tone.setContext(new Tone.Context(), true);
+  }
+
   stop(): void {
     const transport = Tone.getTransport();
     transport.stop();
