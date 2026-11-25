@@ -18,6 +18,8 @@ export interface Melody {
   measureCount: number;
   /** Start of every measure in quarter notes. */
   measureStarts: number[];
+  /** True when the score had no time signature and it was guessed from the measure lengths. */
+  timeGuessed: boolean;
 }
 
 const STEPS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -89,6 +91,7 @@ export function parseMusicXml(xml: string): Melody {
   let melodyVoice: string | null = null;
   let measureStart = 0;
   const measureStarts: number[] = [];
+  const measureLengths: number[] = [];
   const raw: RawNote[] = [];
 
   const measures = children(part, "measure");
@@ -162,8 +165,12 @@ export function parseMusicXml(xml: string): Melody {
       }
     }
     const expected = (beatsPerMeasure * 4) / beatType;
+    if (measureLength > 0) measureLengths.push(measureLength);
     measureStart += measureLength > 0 ? measureLength : expected;
   });
+
+  const guessed = timeSeen ? null : guessTime(measureLengths);
+  if (guessed) [beatsPerMeasure, beatType] = guessed;
 
   return {
     title,
@@ -173,7 +180,27 @@ export function parseMusicXml(xml: string): Melody {
     beatType,
     measureCount: measures.length,
     measureStarts,
+    timeGuessed: guessed !== null,
   };
+}
+
+/** The most common measure length, as a time signature: 3 quarters → 3/4, 2.5 quarters → 5/8. */
+export function guessTime(lengths: number[]): [number, number] | null {
+  const counts = new Map<number, number>();
+  for (const l of lengths) {
+    const key = Math.round(l * 2) / 2;
+    if (key > 0) counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  let best = 0;
+  let bestCount = 0;
+  for (const [length, count] of counts) {
+    if (count > bestCount || (count === bestCount && length > best)) {
+      best = length;
+      bestCount = count;
+    }
+  }
+  if (best === 0) return null;
+  return Number.isInteger(best) ? [best, 4] : [best * 2, 8];
 }
 
 function toMelodyLine(raw: RawNote[]): MelodyNote[] {

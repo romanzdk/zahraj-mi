@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { melodyRange, midiToName, parseMusicXml } from "./melody";
+import { guessTime, melodyRange, midiToName, parseMusicXml } from "./melody";
 import { melodyToMidi } from "./midi";
 import { fitToVoice, VOICES } from "./voice";
 
@@ -77,6 +77,13 @@ describe("parseMusicXml", () => {
     expect(m.tempo).toBe(90);
   });
 
+  it("guesses a missing time signature from the measure lengths", () => {
+    const m3 = `<measure>${note("C", 4, 1)}${note("D", 4, 1)}${note("E", 4, 1)}</measure>`;
+    const xml = score(`<measure><attributes><divisions>1</divisions></attributes>${note("C", 4, 1)}${note("D", 4, 2)}</measure>${m3}${m3}`);
+    const m = parseMusicXml(xml);
+    expect([m.beatsPerMeasure, m.beatType, m.timeGuessed]).toEqual([3, 4, true]);
+  });
+
   it("rejects invalid input", () => {
     expect(() => parseMusicXml("<not-xml")).toThrow();
     expect(() => parseMusicXml("<score-partwise/>")).toThrow();
@@ -84,6 +91,12 @@ describe("parseMusicXml", () => {
 });
 
 describe("helpers", () => {
+  it("turns measure lengths into a time signature", () => {
+    expect(guessTime([3, 3, 1.5, 3])).toEqual([3, 4]);
+    expect(guessTime([2.5, 2.5])).toEqual([5, 8]);
+    expect(guessTime([])).toBeNull();
+  });
+
   it("names notes", () => {
     expect(midiToName(60)).toBe("C4");
     expect(midiToName(70)).toBe("B♭4");

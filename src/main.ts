@@ -174,7 +174,10 @@ function renderPlayer(): void {
   els.tempoValue.textContent = els.tempo.value;
   els.transposeValue.textContent = state.transpose > 0 ? `+${state.transpose}` : String(state.transpose);
   const range = melodyRange(m.notes);
-  const parts = [t("player.notes", { n: m.notes.length, m: m.measureCount })];
+  const parts = [
+    t("player.notes", { n: m.notes.length, m: m.measureCount }),
+    t(m.timeGuessed ? "player.timeGuessed" : "player.time", { t: `${m.beatsPerMeasure}/${m.beatType}` }),
+  ];
   if (range) {
     parts.push(t("player.range", { low: midiToName(range.low + state.transpose), high: midiToName(range.high + state.transpose) }));
   }
