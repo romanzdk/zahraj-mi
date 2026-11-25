@@ -1,0 +1,42 @@
+{
+  "name": "zahraj-mi",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Snap a photo of sheet music, hear the melody and sing along. Optical music recognition runs fully in the browser.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "homepage": "https://romanzdk.github.io/zahraj-mi/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romanzdk/zahraj-mi.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/fetch-models.mjs && vite",
+    "build": "tsc --noEmit && vite build",
+    "models": "node scripts/fetch-models.mjs",
+    "make-demo": "node scripts/make-demo.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fflate": "0.8.3",
+    "homr-web": "0.6.2",
+    "opensheetmusicdisplay": "2.3.0",
+    "tone": "15.1.22"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@resvg/resvg-js": "2.6.2",
+    "@types/node": "26.6.10",
+    "jsdom": "31.0.0",
+    "typescript": "7.0.2",
+    "verovio": "6.4.1",
+    "vite": "8.3.7",
+    "vitest": "5.1.0"
+  }
+}

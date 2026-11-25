@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zahraj mi – noty z fotky jako melodie ke zpívání</title>
+    <meta
+      name="description"
+      content="Vyfoť noty, aplikace je přečte a zahraje melodii, do které můžeš zpívat. Zdarma, bez registrace, vše běží přímo v prohlížeči."
+    />
+    <meta name="theme-color" content="#1f5f5b" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content="Zahraj mi" />
+    <meta property="og:description" content="Vyfoť noty, pusť si melodii a zpívej. Zdarma a bez serveru." />
+    <script src="./coi-serviceworker.js"></script>
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <img src="./favicon.svg" alt="" width="36" height="36" />
+        <div>
+          <h1>Zahraj mi</h1>
+          <p data-i18n="tagline"></p>
+        </div>
+      </div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="cs">CS</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card" id="input-card">
+        <h2 data-i18n="step1.title"></h2>
+        <div id="dropzone" class="dropzone">
+          <div class="actions">
+            <label class="btn primary">
+              <input id="camera-input" type="file" accept="image/*" capture="environment" hidden />
+              <span data-i18n="step1.camera"></span>
+            </label>
+            <label class="btn">
+              <input id="file-input" type="file" accept="image/*" hidden />
+              <span data-i18n="step1.upload"></span>
+            </label>
+          </div>
+          <p class="muted" data-i18n="step1.drop"></p>
+          <p class="links">
+            <label class="link">
+              <input id="xml-input" type="file" accept=".musicxml,.xml,.mxl,application/vnd.recordare.musicxml+xml" hidden />
+              <span data-i18n="step1.musicxml"></span>
+            </label>
+            ·
+            <button type="button" class="link" id="demo-button" data-i18n="step1.demo"></button>
+          </p>
+        </div>
+        <p class="tip" data-i18n="step1.tips"></p>
+
+        <div id="preview" class="preview" hidden>
+          <img id="preview-img" alt="" />
+          <div class="actions">
+            <button type="button" class="btn primary" id="recognize-button" data-i18n="step1.recognize"></button>
+            <button type="button" class="btn" id="reset-button" data-i18n="step1.another"></button>
+          </div>
+        </div>
+        <p class="firsttime muted" id="firsttime" data-i18n="step1.firstTime"></p>
+        <div id="status" class="status" role="status" aria-live="polite" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="status-text"></span>
+          <progress id="status-progress" max="100" hidden></progress>
+        </div>
+      </section>
+
+      <section class="card" id="player-card" hidden>
+        <h2 data-i18n="step2.title"></h2>
+        <p class="muted" id="melody-info"></p>
+
+        <div class="transport">
+          <button type="button" class="btn primary big" id="play-button" data-i18n="player.play"></button>
+          <button type="button" class="btn" id="pitch-button" data-i18n="player.pitch"></button>
+          <span class="countin" id="countin" aria-live="polite"></span>
+        </div>
+
+        <div class="controls">
+          <label>
+            <span><span data-i18n="player.tempo"></span>: <output id="tempo-value"></output> BPM</span>
+            <input id="tempo" type="range" min="30" max="220" step="1" />
+          </label>
+
+          <div class="field">
+            <span><span data-i18n="player.transpose"></span>: <output id="transpose-value"></output> <span data-i18n="player.semitones"></span></span>
+            <div class="stepper">
+              <button type="button" class="btn small" id="transpose-down" aria-label="-1">−</button>
+              <button type="button" class="btn small" id="transpose-reset">0</button>
+              <button type="button" class="btn small" id="transpose-up" aria-label="+1">+</button>
+            </div>
+          </div>
+
+          <label>
+            <span data-i18n="player.voice"></span>
+            <select id="voice"></select>
+          </label>
+
+          <label>
+            <span data-i18n="player.instrument"></span>
+            <select id="instrument">
+              <option value="piano" data-i18n="instrument.piano"></option>
+              <option value="soft" data-i18n="instrument.soft"></option>
+              <option value="bright" data-i18n="instrument.bright"></option>
+            </select>
+          </label>
+
+          <div class="field">
+            <span data-i18n="player.measures"></span>
+            <div class="stepper">
+              <input id="from-measure" type="number" min="1" inputmode="numeric" />
+              <span>–</span>
+              <input id="to-measure" type="number" min="1" inputmode="numeric" />
+            </div>
+          </div>
+
+          <div class="field checks">
+            <label class="check"><input id="count-in" type="checkbox" checked /> <span data-i18n="player.countIn"></span></label>
+            <label class="check"><input id="loop" type="checkbox" /> <span data-i18n="player.loop"></span></label>
+          </div>
+        </div>
+
+        <div id="score" class="score"></div>
+
+        <div class="actions downloads">
+          <button type="button" class="btn" id="download-midi" data-i18n="download.midi"></button>
+          <button type="button" class="btn" id="download-xml" data-i18n="download.musicxml"></button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p data-i18n="footer.privacy"></p>
+      <p>
+        <a href="https://github.com/romanzdk/zahraj-mi" data-i18n="footer.source"></a>
+        · <span data-i18n="footer.engine"></span>
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
