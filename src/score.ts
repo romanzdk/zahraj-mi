@@ -21,6 +21,8 @@ export class ScoreView {
     }
     this.hideCursor();
     await this.osmd.load(musicXml);
+    // OSMD prints "Untitled Score" when the recognizer found no title.
+    this.osmd.setOptions({ drawTitle: Boolean(this.osmd.Sheet?.TitleString && this.osmd.Sheet.TitleString !== "Untitled Score") });
     this.osmd.render();
   }
 

@@ -46,6 +46,8 @@ photo ──► homr (optical music recognition, in a Web Worker) ──► Musi
 Recognition does not need a paid model: homr is free, open source and runs on the user's device.
 That keeps the app free to run (static hosting only), fast after the first load and private.
 Tests in CI run the real recognizer on a sample page (see [`e2e/app.spec.ts`](e2e/app.spec.ts)).
+You can run the same check on your own photos: `REALWORLD_DIR=/path/to/photos npm run test:realworld` writes a report with the recognized notes and a screenshot of each score to `test-results/realworld/`.
+On five real songbook photos (Czech Christmas songs, 430–1200 px wide) every page was read; on the two with hand-checked melodies all pitches matched. Rhythm and time signatures are less reliable on small, blurry images.
 
 ### Limitations
 
