@@ -250,7 +250,7 @@ async function play(): Promise<void> {
   renderPlayer();
   try {
     await started;
-    if (state.statusKey?.key === "player.loadError") setStatus(null);
+    clearSoundError();
   } catch (err) {
     soundFailed(err);
   }
@@ -259,6 +259,10 @@ async function play(): Promise<void> {
 
 function soundFailed(err: unknown): void {
   setStatus("player.loadError", {}, true, String(err));
+}
+
+function clearSoundError(): void {
+  if (state.statusKey?.key === "player.loadError") setStatus(null);
 }
 
 function download(data: BlobPart, type: string, ext: string): void {
@@ -548,6 +552,7 @@ els.voice.addEventListener("change", () => {
   if (voice && state.melody) setTranspose(fitToVoice(state.melody.notes, voice));
 });
 els.instrument.addEventListener("change", () => {
+  clearSoundError();
   player.preload(els.instrument.value as InstrumentId).catch(soundFailed);
   restartIfPlaying();
 });

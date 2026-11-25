@@ -237,4 +237,6 @@ test("says so when an instrument cannot be loaded", async ({ page }) => {
   await page.locator("#play-button").click();
   await expect(page.locator("#status-text")).toContainText("could not be loaded");
   await expect(page.locator("#play-button")).toHaveText("Play");
+  await page.locator("#instrument").selectOption("piano");
+  await expect(page.locator("#status")).toBeHidden();
 });
