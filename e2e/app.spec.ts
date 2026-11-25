@@ -10,7 +10,10 @@ const EXPECTED = [
 /** Opens the app and, where coi-serviceworker has to reload the page first, waits for that reload. */
 async function open(page: Page): Promise<void> {
   await page.goto("./");
-  await page.waitForFunction(() => crossOriginIsolated || navigator.serviceWorker?.controller != null, null, { timeout: 20_000 }).catch(() => undefined);
+  const coiActive = await page.evaluate(() => "chrome" in window || "netscape" in window);
+  if (coiActive) {
+    await page.waitForFunction(() => crossOriginIsolated || navigator.serviceWorker?.controller != null, null, { timeout: 20_000 }).catch(() => undefined);
+  }
   await page.waitForLoadState("load");
   console.log(`crossOriginIsolated ${await page.evaluate(() => crossOriginIsolated)}`);
 }
@@ -60,4 +63,14 @@ test("recognizes notes from the demo image in the browser", async ({ page }) => 
   const score = similarity(got, EXPECTED);
   console.log(`recognized ${got.length} notes, similarity ${score.toFixed(3)}: ${got.join(" ")}`);
   expect(score).toBeGreaterThanOrEqual(0.9);
+});
+
+test("tells the user when the page reloaded during recognition", async ({ page }) => {
+  await open(page);
+  await page.evaluate(() => sessionStorage.setItem("zahraj-mi.recognition", "last step models\ntest"));
+  await page.reload();
+  await expect(page.locator("#status.error")).toBeVisible();
+  await expect(page.locator("#status-log")).toHaveText(/last step models/);
+  await page.reload();
+  await expect(page.locator("#status")).toBeHidden();
 });

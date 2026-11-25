@@ -106,6 +106,30 @@ function resetInput(): void {
   setStatus(null);
 }
 
+const RUN_KEY = "zahraj-mi.recognition";
+
+function storeRun(details: string | null): void {
+  try {
+    if (details === null) sessionStorage.removeItem(RUN_KEY);
+    else sessionStorage.setItem(RUN_KEY, details);
+  } catch {
+    // storage may be blocked
+  }
+}
+
+/** A run still marked as running after a page load means the page reloaded in the middle of it. */
+function reportInterruptedRun(): void {
+  let details: string | null = null;
+  try {
+    details = sessionStorage.getItem(RUN_KEY);
+  } catch {
+    return;
+  }
+  if (details === null) return;
+  storeRun(null);
+  setStatus("status.interrupted", {}, true, details);
+}
+
 async function runRecognition(): Promise<void> {
   if (!state.image || state.busy) return;
   if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
@@ -132,8 +156,10 @@ async function runRecognition(): Promise<void> {
       els.statusProgress.hidden = true;
     }
     els.statusText.textContent += ` ${elapsed}`;
+    storeRun(`last step ${step.kind} at ${elapsed}\n${diagnostics()}`);
   };
   try {
+    storeRun(`started\n${diagnostics()}`);
     const xml = await recognizeImage(state.image, showStep);
     await loadMusicXml(xml);
     setBusy(false);
@@ -146,6 +172,7 @@ async function runRecognition(): Promise<void> {
     console.error(err);
   } finally {
     window.clearInterval(tick);
+    storeRun(null);
   }
 }
 
@@ -382,3 +409,4 @@ $("silent-hint").hidden = !isIos;
 
 applyTranslations();
 renderLanguage(getLang());
+reportInterruptedRun();

@@ -12,6 +12,15 @@
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <meta property="og:title" content="Zahraj mi" />
     <meta property="og:description" content="Vyfoť noty, pusť si melodii a zpívej. Zdarma a bez serveru." />
+    <script>
+      // Outside Chromium and Firefox, coi-serviceworker relies on COEP "credentialless", which Safari
+      // lacks: there it never isolates the page and only reloads it, so in Safari it is off and removed.
+      var chromiumOrFirefox = !!(window.chrome || window.netscape);
+      window.coi = {
+        shouldRegister: function () { return chromiumOrFirefox; },
+        shouldDeregister: function () { return !chromiumOrFirefox; },
+      };
+    </script>
     <script src="./coi-serviceworker.js"></script>
   </head>
   <body>
