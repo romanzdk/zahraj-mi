@@ -5,11 +5,12 @@ const octaves = (notes: string[], from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, i) => notes.map((n) => `${n}${from + i}`)).flat();
 
 /** Sample files in public/samples/<instrument>/; Tone.Sampler pitch-shifts the notes in between. */
+// Violin notes below G3 are cello recordings: a violin cannot go lower, but bass voices do.
 export const SAMPLES = {
   piano: octaves(["C", "Ds", "Fs", "A"], 1, 7),
   flute: ["C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6", "A6", "C7"],
   guitar: ["E2", "Gs2", "C3", "E3", "Gs3", "C4", "E4", "Gs4", "C5"],
-  violin: ["G3", "C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6"],
+  violin: ["E2", "G2", "C3", "E3", "G3", "C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6"],
   organ: octaves(["C", "Fs"], 2, 5).concat("C6"),
 };
 
