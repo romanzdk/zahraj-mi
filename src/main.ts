@@ -549,7 +549,9 @@ els.libraryList.addEventListener("click", (e) => {
   if (!button || !song || state.busy) return;
   if (button.classList.contains("song-open")) {
     void openSong(song);
-  } else if (button.classList.contains("song-rename")) {
+    return;
+  }
+  if (button.classList.contains("song-rename")) {
     const name = prompt(t("library.renamePrompt"), song.name)?.trim();
     if (name) store(() => updateSong(song.id, { name }));
   } else if (button.classList.contains("song-delete")) {
@@ -557,7 +559,10 @@ els.libraryList.addEventListener("click", (e) => {
     store(() => deleteSong(song.id));
     if (state.songId === song.id) state.songId = null;
   }
+  const action = button.className.match(/song-\w+/)?.[0];
   renderLibrary();
+  // The list is rebuilt, so keyboard focus goes back to the same button, or to the first song after a delete.
+  (els.libraryList.querySelector<HTMLElement>(`li[data-id="${song.id}"] .${action}`) ?? els.libraryList.querySelector<HTMLElement>(".song-open"))?.focus();
 });
 
 els.downloadMidi.addEventListener("click", () => {

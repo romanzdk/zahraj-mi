@@ -136,6 +136,7 @@ test("remembers an opened song with its settings after reload", async ({ page })
   page.once("dialog", (d) => void d.accept("Ode"));
   await songs.first().locator(".song-rename").click();
   await expect(songs.first().locator(".song-name")).toHaveText("Ode");
+  await expect(songs.first().locator(".song-rename")).toBeFocused();
   page.once("dialog", (d) => void d.dismiss());
   await songs.first().locator(".song-delete").click();
   await expect(songs).toHaveCount(1);
