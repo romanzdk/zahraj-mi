@@ -242,6 +242,16 @@ function strip(n: MelodyNote & { tieStart: boolean }): MelodyNote {
   return { midi: n.midi, start: n.start, duration: n.duration, measure: n.measure };
 }
 
+/** Where a looped section ends: its written rests, but at least one beat of breath after the last note. */
+export function loopEnd(notes: MelodyNote[], sectionStart: number, sectionEnd: number, beat: number): number {
+  let lastNoteEnd = sectionStart;
+  for (const n of notes) {
+    if (n.start < sectionStart - 1e-6 || n.start >= sectionEnd - 1e-6) continue;
+    lastNoteEnd = Math.max(lastNoteEnd, Math.min(n.start + n.duration, sectionEnd));
+  }
+  return Math.max(sectionEnd, lastNoteEnd + beat);
+}
+
 export function melodyRange(notes: MelodyNote[]): { low: number; high: number } | null {
   if (notes.length === 0) return null;
   let low = Infinity;

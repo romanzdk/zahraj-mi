@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { guessTime, melodyRange, midiToName, parseMusicXml } from "./melody";
+import { guessTime, loopEnd, melodyRange, midiToName, parseMusicXml } from "./melody";
 import { melodyToMidi } from "./midi";
 import { fitToVoice, VOICES } from "./voice";
 
@@ -96,6 +96,15 @@ describe("helpers", () => {
     expect(guessTime([3, 3, 1.5, 3])).toEqual([3, 4]);
     expect(guessTime([2.5, 2.5])).toEqual([5, 8]);
     expect(guessTime([])).toBeNull();
+  });
+
+  it("ends a loop with the written rests, but at least one beat after the last note", () => {
+    const n = (start: number, duration: number) => ({ midi: 60, start, duration, measure: 0 });
+    expect(loopEnd([n(0, 2), n(2, 2), n(4, 2)], 0, 8, 1)).toBe(8);
+    expect(loopEnd([n(0, 4), n(4, 4)], 0, 8, 1)).toBe(9);
+    expect(loopEnd([n(0, 4), n(4, 3.5)], 0, 8, 1)).toBe(8.5);
+    expect(loopEnd([n(0, 4), n(4, 8)], 0, 8, 1)).toBe(9);
+    expect(loopEnd([n(0, 4), n(4, 2), n(8, 4)], 4, 8, 1)).toBe(8);
   });
 
   it("names notes", () => {

@@ -1,5 +1,5 @@
 import * as Tone from "tone";
-import type { Melody, MelodyNote } from "./melody";
+import { loopEnd, type Melody, type MelodyNote } from "./melody";
 
 const octaves = (notes: string[], from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, i) => notes.map((n) => `${n}${from + i}`)).flat();
@@ -127,8 +127,8 @@ export class Player {
     const sectionStart = melody.measureStarts[from] ?? 0;
     const sectionEnd = melody.measureStarts[to + 1] ?? melody.length;
     const beatLength = 4 / melody.beatType;
-    // Before every repetition there is a breath: the count-in again, or one silent beat without it.
-    const leadIn = opts.countIn ? melody.beatsPerMeasure * beatLength : opts.loop ? beatLength : 0;
+    const countInLength = opts.countIn ? melody.beatsPerMeasure * beatLength : 0;
+    const end = opts.loop ? loopEnd(melody.notes, sectionStart, sectionEnd, beatLength) : sectionEnd;
 
     if (opts.countIn) {
       for (let b = 0; b < melody.beatsPerMeasure; b++) {
@@ -141,7 +141,7 @@ export class Player {
 
     melody.notes.forEach((note, index) => {
       if (note.start < sectionStart - 1e-6 || note.start >= sectionEnd - 1e-6) return;
-      const at = (leadIn + note.start - sectionStart) * quarter;
+      const at = (countInLength + note.start - sectionStart) * quarter;
       const length = Math.max(0.05, Math.min(note.duration, sectionEnd - note.start) * quarter * 0.95);
       const freq = Tone.Frequency(note.midi + opts.transpose, "midi").toFrequency();
       transport.schedule((time) => {
@@ -150,10 +150,10 @@ export class Player {
       }, at);
     });
 
-    const total = (leadIn + sectionEnd - sectionStart) * quarter;
+    const total = (countInLength + end - sectionStart) * quarter;
     if (opts.loop) {
       transport.loop = true;
-      transport.loopStart = 0;
+      transport.loopStart = countInLength * quarter;
       transport.loopEnd = total;
     } else {
       transport.loop = false;
@@ -166,6 +166,19 @@ export class Player {
     }
     this.playing = true;
     transport.start("+0.05");
+  }
+
+  /**
+   * iPhone Safari can leave the old audio context silent after the photo picker or a heavy
+   * recognition run, even though it reports "running". A fresh context is what a reload gives.
+   */
+  reset(): void {
+    this.stop();
+    for (const v of this.voices.values()) v.dispose();
+    this.voices.clear();
+    this.click?.dispose();
+    this.click = null;
+    Tone.setContext(new Tone.Context(), true);
   }
 
   stop(): void {

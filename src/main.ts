@@ -187,7 +187,7 @@ async function runRecognition(): Promise<void> {
 async function loadMusicXml(xml: string): Promise<void> {
   const melody = parseMusicXml(xml);
   if (melody.notes.length === 0) throw new RecognizeError("not_music", "no notes", "");
-  player.stop();
+  player.reset();
   state.musicXml = xml;
   state.melody = melody;
   state.transpose = 0;
