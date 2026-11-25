@@ -13,7 +13,8 @@ export default defineConfig({
     include: ["homr-web > @techstark/opencv-js"],
   },
   server: { headers: isolation },
-  preview: { headers: isolation },
+  // NO_ISOLATION mimics GitHub Pages, where coi-serviceworker has to add the headers.
+  preview: { headers: process.env.NO_ISOLATION ? {} : isolation },
   build: { target: "es2022", chunkSizeWarningLimit: 4000 },
   worker: { format: "es" },
   test: { exclude: ["e2e/**", "node_modules/**"] },
