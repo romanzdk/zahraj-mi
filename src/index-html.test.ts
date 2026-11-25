@@ -12,6 +12,8 @@ describe("index.html", () => {
     const gc = doc.querySelector("script[data-goatcounter]");
     expect(gc?.getAttribute("data-goatcounter")).toBe("https://zahrajmi.goatcounter.com/count");
     expect(gc?.getAttribute("crossorigin")).toBe("anonymous");
+    expect(gc?.getAttribute("src")).toBe("https://gc.zgo.at/count.v4.js");
+    expect(gc?.getAttribute("integrity")).toMatch(/^sha384-/);
   });
 
   it("has absolute canonical and share-preview URLs pointing at existing files", () => {
@@ -21,6 +23,7 @@ describe("index.html", () => {
     expect(image.startsWith(SITE)).toBe(true);
     expect(existsSync(`public/${image.slice(SITE.length)}`)).toBe(true);
     expect(meta("twitter:card")).toBe("summary_large_image");
+    expect(meta("og:locale:alternate")).toBeUndefined();
   });
 
   it("has valid JSON-LD", () => {

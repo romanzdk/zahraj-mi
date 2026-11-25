@@ -14,14 +14,13 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Zahraj mi" />
     <meta property="og:locale" content="cs_CZ" />
-    <meta property="og:locale:alternate" content="en_US" />
     <meta property="og:url" content="https://romanzdk.github.io/zahraj-mi/" />
     <meta property="og:title" content="Zahraj mi – noty z fotky jako melodie ke zpívání" />
     <meta property="og:description" content="Vyfoť noty, pusť si melodii a zpívej. Zdarma a bez serveru." />
     <meta property="og:image" content="https://romanzdk.github.io/zahraj-mi/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Zahraj mi: vyfocené noty Ódy na radost připravené k přehrání" />
+    <meta property="og:image:alt" content="Zahraj mi: noty Ódy na radost připravené k rozpoznání a přehrání" />
     <meta name="twitter:card" content="summary_large_image" />
     <script type="application/ld+json">
       {
@@ -230,7 +229,14 @@
     </footer>
 
     <script type="module" src="/src/main.ts"></script>
-    <!-- crossorigin: the page is cross-origin isolated (COEP require-corp) and count.js sends no CORP header -->
-    <script data-goatcounter="https://zahrajmi.goatcounter.com/count" async crossorigin="anonymous" src="https://gc.zgo.at/count.js"></script>
+    <!-- crossorigin: COEP require-corp (Chromium, Firefox) blocks count.js, which sends no CORP header.
+         integrity: a third-party script must not be able to change and read the user's images. -->
+    <script
+      data-goatcounter="https://zahrajmi.goatcounter.com/count"
+      async
+      crossorigin="anonymous"
+      integrity="sha384-nRw6qfbWyJha9LhsOtSb2YJDyZdKvvCFh0fJYlkquSFjUxp9FVNugbfy8q1jdxI+"
+      src="https://gc.zgo.at/count.v4.js"
+    ></script>
   </body>
 </html>
