@@ -50,9 +50,9 @@ jobs:
       - name: Download and verify models
         run: npm run models
       - run: npm run build
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: End-to-end tests (includes real note recognition)
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: End-to-end tests in Chromium and WebKit (includes real note recognition)
         run: npm run test:e2e
       - name: Upload test report
         if: ${{ !cancelled() }}
