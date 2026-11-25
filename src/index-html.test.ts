@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { SAMPLES } from "./player";
 
 const SITE = "https://romanzdk.github.io/zahraj-mi/";
 const doc = new DOMParser().parseFromString(readFileSync("index.html", "utf8"), "text/html");
@@ -24,6 +25,20 @@ describe("index.html", () => {
     expect(existsSync(`public/${image.slice(SITE.length)}`)).toBe(true);
     expect(meta("twitter:card")).toBe("summary_large_image");
     expect(meta("og:locale:alternate")).toBeUndefined();
+  });
+
+  it("offers every sampled instrument, and every sample file exists", () => {
+    const options = [...doc.querySelectorAll("#instrument option")].map((o) => o.getAttribute("value"));
+    expect(options).toEqual(Object.keys(SAMPLES));
+    for (const [id, notes] of Object.entries(SAMPLES)) {
+      for (const note of notes) expect(existsSync(`public/samples/${id}/${note}.mp3`), `${id}/${note}`).toBe(true);
+    }
+  });
+
+  it("links the third-party notices from the page, which the sample licenses require", () => {
+    const href = doc.querySelector('footer a[data-i18n="footer.credits"]')?.getAttribute("href");
+    expect(href).toBe("https://github.com/romanzdk/zahraj-mi/blob/main/THIRD_PARTY_NOTICES.md");
+    expect(existsSync("THIRD_PARTY_NOTICES.md")).toBe(true);
   });
 
   it("has valid JSON-LD", () => {

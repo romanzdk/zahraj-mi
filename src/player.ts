@@ -1,7 +1,29 @@
 import * as Tone from "tone";
 import { loopEnd, type Melody, type MelodyNote } from "./melody";
 
-export type InstrumentId = "piano" | "soft" | "bright";
+const octaves = (notes: string[], from: number, to: number) =>
+  Array.from({ length: to - from + 1 }, (_, i) => notes.map((n) => `${n}${from + i}`)).flat();
+
+/** Sample files in public/samples/<instrument>/; Tone.Sampler pitch-shifts the notes in between. */
+// Violin notes below G3 are cello recordings: a violin cannot go lower, but bass voices do.
+export const SAMPLES = {
+  piano: octaves(["C", "Ds", "Fs", "A"], 1, 7),
+  flute: ["C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6", "A6", "C7"],
+  guitar: ["E2", "Gs2", "C3", "E3", "Gs3", "C4", "E4", "Gs4", "C5"],
+  violin: ["E2", "G2", "C3", "E3", "G3", "C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6"],
+  organ: octaves(["C", "Fs"], 2, 5).concat("C6"),
+};
+
+export type InstrumentId = keyof typeof SAMPLES;
+
+// Volume measured on the first second of a middle note against the piano. Held instruments get a
+// short release, or fast notes ring into each other and the pitch change is hard to hear.
+const SOUND: Partial<Record<InstrumentId, { volume: number; release: number }>> = {
+  flute: { volume: -10, release: 0.2 },
+  guitar: { volume: -3, release: 1 },
+  violin: { volume: -8, release: 0.2 },
+  organ: { volume: -9, release: 0.15 },
+};
 
 export interface PlayOptions {
   tempo: number;
@@ -19,18 +41,6 @@ export interface PlayerEvents {
   onEnd?: () => void;
 }
 
-type Voice = Tone.Sampler | Tone.PolySynth;
-
-const PIANO_NOTES = ["C", "Ds", "Fs", "A"];
-
-function pianoUrls(): Record<string, string> {
-  const urls: Record<string, string> = {};
-  for (let octave = 1; octave <= 7; octave++) {
-    for (const n of PIANO_NOTES) urls[`${n.replace("s", "#")}${octave}`] = `${n}${octave}.mp3`;
-  }
-  return urls;
-}
-
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
 
 /** iPhone silent mode mutes Web Audio unless the page says it plays media. */
@@ -41,10 +51,12 @@ function startAudio(): Promise<void> {
 }
 
 export class Player {
-  private voices = new Map<InstrumentId, Voice>();
+  private voices = new Map<InstrumentId, Promise<Tone.Sampler>>();
   private click: Tone.MembraneSynth | null = null;
   private events: PlayerEvents = {};
   private playing = false;
+  /** Bumped by every stop(), so a play() still waiting for samples knows it was cancelled. */
+  private run = 0;
 
   setEvents(events: PlayerEvents): void {
     this.events = events;
@@ -54,30 +66,23 @@ export class Player {
     return this.playing;
   }
 
-  private async voice(id: InstrumentId): Promise<Voice> {
-    const existing = this.voices.get(id);
-    if (existing) return existing;
-    let v: Voice;
-    if (id === "piano") {
-      v = new Tone.Sampler({
-        urls: pianoUrls(),
-        baseUrl: `${import.meta.env.BASE_URL}samples/piano/`,
-        release: 1,
+  private voice(id: InstrumentId): Promise<Tone.Sampler> {
+    const cached = this.voices.get(id);
+    if (cached) return cached;
+    const v = new Promise<Tone.Sampler>((resolve, reject) => {
+      const sampler = new Tone.Sampler({
+        urls: Object.fromEntries(SAMPLES[id].map((n) => [n.replace("s", "#"), `${n}.mp3`])),
+        baseUrl: `${import.meta.env.BASE_URL}samples/${id}/`,
+        ...(SOUND[id] ?? { volume: 0, release: 1 }),
+        onload: () => resolve(sampler),
+        onerror: (err) => {
+          sampler.dispose();
+          reject(err);
+        },
       }).toDestination();
-      await Tone.loaded();
-    } else if (id === "soft") {
-      v = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.06, decay: 0.1, sustain: 0.8, release: 0.4 },
-      }).toDestination();
-      v.volume.value = -6;
-    } else {
-      v = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "triangle8" },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.3 },
-      }).toDestination();
-      v.volume.value = -10;
-    }
+    });
+    // After reset() a newer load may hold this id; a late failure must not evict it.
+    v.catch(() => this.voices.get(id) === v && this.voices.delete(id));
     this.voices.set(id, v);
     return v;
   }
@@ -95,8 +100,17 @@ export class Player {
 
   async play(melody: Melody, opts: PlayOptions): Promise<void> {
     this.stop();
-    await startAudio();
-    const v = await this.voice(opts.instrument);
+    const run = this.run;
+    this.playing = true;
+    let v: Tone.Sampler;
+    try {
+      await startAudio();
+      v = await this.voice(opts.instrument);
+    } catch (err) {
+      if (run === this.run) this.playing = false;
+      throw err;
+    }
+    if (run !== this.run) return;
     if (!this.click) {
       this.click = new Tone.MembraneSynth({ octaves: 2, pitchDecay: 0.01 }).toDestination();
       this.click.volume.value = -8;
@@ -160,7 +174,7 @@ export class Player {
    */
   reset(): void {
     this.stop();
-    for (const v of this.voices.values()) v.dispose();
+    for (const v of this.voices.values()) void v.then((s) => s.dispose(), () => undefined);
     this.voices.clear();
     this.click?.dispose();
     this.click = null;
@@ -168,11 +182,12 @@ export class Player {
   }
 
   stop(): void {
+    this.run++;
     const transport = Tone.getTransport();
     transport.stop();
     transport.cancel();
     transport.loop = false;
-    for (const v of this.voices.values()) v.releaseAll();
+    for (const v of this.voices.values()) void v.then((s) => s.releaseAll(), () => undefined);
     this.playing = false;
   }
 }

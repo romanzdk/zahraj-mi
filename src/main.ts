@@ -238,7 +238,7 @@ async function play(): Promise<void> {
   if (!m) return;
   const from = Number(els.fromMeasure.value) || 1;
   const to = Number(els.toMeasure.value) || m.measureCount;
-  await player.play(m, {
+  const started = player.play(m, {
     tempo: Number(els.tempo.value),
     transpose: state.transpose,
     instrument: els.instrument.value as InstrumentId,
@@ -248,6 +248,21 @@ async function play(): Promise<void> {
     toMeasure: Math.max(from, to) - 1,
   });
   renderPlayer();
+  try {
+    await started;
+    clearSoundError();
+  } catch (err) {
+    soundFailed(err);
+  }
+  renderPlayer();
+}
+
+function soundFailed(err: unknown): void {
+  setStatus("player.loadError", {}, true, String(err));
+}
+
+function clearSoundError(): void {
+  if (state.statusKey?.key === "player.loadError") setStatus(null);
 }
 
 function download(data: BlobPart, type: string, ext: string): void {
@@ -321,11 +336,13 @@ function applySettings(s: SongSettings): void {
   state.transpose = s.transpose;
   els.voice.value = s.voice;
   els.instrument.value = s.instrument;
+  // Songs saved before an instrument was removed would leave the list empty.
+  if (!els.instrument.value) els.instrument.value = "piano";
   els.fromMeasure.value = String(s.from);
   els.toMeasure.value = String(s.to);
   els.countIn.checked = s.countIn;
   els.loop.checked = s.loop;
-  void player.preload(els.instrument.value as InstrumentId);
+  player.preload(els.instrument.value as InstrumentId).catch(soundFailed);
   renderPlayer();
 }
 
@@ -519,7 +536,7 @@ els.pitchButton.addEventListener("click", () => {
   const m = state.melody;
   const from = (Number(els.fromMeasure.value) || 1) - 1;
   const first = m?.notes.find((n) => n.measure >= from) ?? m?.notes[0];
-  if (first) void player.playPitch(first.midi + state.transpose, els.instrument.value as InstrumentId);
+  if (first) player.playPitch(first.midi + state.transpose, els.instrument.value as InstrumentId).catch(soundFailed);
 });
 
 els.tempo.addEventListener("input", renderPlayer);
@@ -535,7 +552,8 @@ els.voice.addEventListener("change", () => {
   if (voice && state.melody) setTranspose(fitToVoice(state.melody.notes, voice));
 });
 els.instrument.addEventListener("change", () => {
-  void player.preload(els.instrument.value as InstrumentId);
+  clearSoundError();
+  player.preload(els.instrument.value as InstrumentId).catch(soundFailed);
   restartIfPlaying();
 });
 for (const el of [els.fromMeasure, els.toMeasure, els.countIn, els.loop]) el.addEventListener("change", restartIfPlaying);
