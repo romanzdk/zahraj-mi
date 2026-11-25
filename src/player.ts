@@ -15,8 +15,14 @@ export const SAMPLES = {
 
 export type InstrumentId = keyof typeof SAMPLES;
 
-// Measured on the first second of a middle note: these sustain and sit ~9 dB above the piano.
-const VOLUME_DB: Partial<Record<InstrumentId, number>> = { flute: -10, violin: -8, organ: -9 };
+// Volume measured on the first second of a middle note against the piano. Held instruments get a
+// short release, or fast notes ring into each other and the pitch change is hard to hear.
+const SOUND: Partial<Record<InstrumentId, { volume: number; release: number }>> = {
+  flute: { volume: -10, release: 0.2 },
+  guitar: { volume: -3, release: 1 },
+  violin: { volume: -8, release: 0.2 },
+  organ: { volume: -9, release: 0.15 },
+};
 
 export interface PlayOptions {
   tempo: number;
@@ -34,7 +40,6 @@ export interface PlayerEvents {
   onEnd?: () => void;
 }
 
-
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
 
 /** iPhone silent mode mutes Web Audio unless the page says it plays media. */
@@ -49,6 +54,8 @@ export class Player {
   private click: Tone.MembraneSynth | null = null;
   private events: PlayerEvents = {};
   private playing = false;
+  /** Bumped by every stop(), so a play() still waiting for samples knows it was cancelled. */
+  private run = 0;
 
   setEvents(events: PlayerEvents): void {
     this.events = events;
@@ -65,10 +72,12 @@ export class Player {
         const sampler = new Tone.Sampler({
           urls: Object.fromEntries(SAMPLES[id].map((n) => [n.replace("s", "#"), `${n}.mp3`])),
           baseUrl: `${import.meta.env.BASE_URL}samples/${id}/`,
-          release: 1,
-          volume: VOLUME_DB[id] ?? 0,
+          ...(SOUND[id] ?? { volume: 0, release: 1 }),
           onload: () => resolve(sampler),
-          onerror: reject,
+          onerror: (err) => {
+            sampler.dispose();
+            reject(err);
+          },
         }).toDestination();
       });
       v.catch(() => this.voices.delete(id));
@@ -90,8 +99,17 @@ export class Player {
 
   async play(melody: Melody, opts: PlayOptions): Promise<void> {
     this.stop();
-    await startAudio();
-    const v = await this.voice(opts.instrument);
+    const run = this.run;
+    this.playing = true;
+    let v: Tone.Sampler;
+    try {
+      await startAudio();
+      v = await this.voice(opts.instrument);
+    } catch (err) {
+      if (run === this.run) this.playing = false;
+      throw err;
+    }
+    if (run !== this.run) return;
     if (!this.click) {
       this.click = new Tone.MembraneSynth({ octaves: 2, pitchDecay: 0.01 }).toDestination();
       this.click.volume.value = -8;
@@ -150,6 +168,7 @@ export class Player {
   }
 
   stop(): void {
+    this.run++;
     const transport = Tone.getTransport();
     transport.stop();
     transport.cancel();

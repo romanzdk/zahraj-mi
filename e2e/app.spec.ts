@@ -205,3 +205,36 @@ test("every instrument loads its samples and plays", async ({ page }) => {
   expect(bad).toEqual([]);
   expect([...loaded].sort()).toEqual([...ids].sort());
 });
+
+test("stop works while an instrument is still loading", async ({ page }) => {
+  let release = () => {};
+  const gate = new Promise<void>((r) => (release = r));
+  await page.route("**/samples/violin/**", async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await open(page);
+  await page.locator("[data-lang=en]").click();
+  await page.locator("#demo-button").click();
+  await expect(page.locator("#player-card")).toBeVisible();
+  await page.locator("#instrument").selectOption("violin");
+  await page.locator("#play-button").click();
+  await expect(page.locator("#play-button")).toHaveText("Stop");
+  await page.locator("#play-button").click();
+  await expect(page.locator("#play-button")).toHaveText("Play");
+  release();
+  await page.waitForTimeout(1000);
+  await expect(page.locator("#play-button")).toHaveText("Play");
+});
+
+test("says so when an instrument cannot be loaded", async ({ page }) => {
+  await page.route("**/samples/organ/**", (route) => route.fulfill({ status: 404 }));
+  await open(page);
+  await page.locator("[data-lang=en]").click();
+  await page.locator("#demo-button").click();
+  await expect(page.locator("#player-card")).toBeVisible();
+  await page.locator("#instrument").selectOption("organ");
+  await page.locator("#play-button").click();
+  await expect(page.locator("#status-text")).toContainText("could not be loaded");
+  await expect(page.locator("#play-button")).toHaveText("Play");
+});

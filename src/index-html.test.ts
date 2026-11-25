@@ -35,6 +35,12 @@ describe("index.html", () => {
     }
   });
 
+  it("links the third-party notices from the page, which the sample licenses require", () => {
+    const href = doc.querySelector('footer a[data-i18n="footer.credits"]')?.getAttribute("href");
+    expect(href).toBe("https://github.com/romanzdk/zahraj-mi/blob/main/THIRD_PARTY_NOTICES.md");
+    expect(existsSync("THIRD_PARTY_NOTICES.md")).toBe(true);
+  });
+
   it("has valid JSON-LD", () => {
     const ld = JSON.parse(doc.querySelector('script[type="application/ld+json"]')!.textContent!);
     expect(ld["@type"]).toBe("WebApplication");
