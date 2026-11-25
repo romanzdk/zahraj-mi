@@ -58,13 +58,12 @@ jobs:
     name: End-to-end tests (${{ matrix.project }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Browsers come preinstalled; keep the tag equal to @playwright/test in package.json.
+    container: mcr.microsoft.com/playwright:v1.65.0-noble
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { project: chromium, browser: chromium }
-          - { project: webkit, browser: webkit }
-          - { project: webkit-pages, browser: webkit }
+        project: [chromium, webkit, webkit-pages]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -80,8 +79,6 @@ jobs:
       - name: Download and verify models
         run: npm run models
       - run: npm run build
-      - name: Install browser
-        run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: End-to-end tests (includes real note recognition)
         run: npm run test:e2e -- --project ${{ matrix.project }}
       - name: Upload test report
