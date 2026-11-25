@@ -20,7 +20,7 @@ Everything runs in your browser – free, no sign-up, and your images never leav
 - 🎹 **Made for singing.** Tempo slider, count-in, *starting note* button, loop a range of measures.
 - 🎚️ **Fits your voice.** Transpose by semitones or pick a voice type (bass, tenor, alto, soprano, child) and the melody moves into a comfortable range.
 - 👀 **See what was read.** The recognized score is shown with a cursor that follows the music, so mistakes are easy to spot.
-- 🗂️ **Your songs, remembered.** Every recognized song is saved in your browser with its tempo, key and other settings. Open it again from *My songs* without taking a new photo. Songs stay on this device only; clearing the site data removes them.
+- 🗂️ **Your songs, remembered.** Every recognized song is saved in your browser with its tempo, key and other settings. Open it again from *My songs* without taking a new photo. Songs stay on this device only; clearing the site data removes them, and Safari on iPhone may clear them after a week without a visit unless the page is added to the Home Screen.
 - 💾 **Take it with you.** Download the melody as MIDI (in your chosen key and tempo) or the score as MusicXML.
 - 🔒 **Private by design.** Note recognition runs on your device. No server, no account, no tracking of your images. Visits are counted with [GoatCounter](https://www.goatcounter.com/), without cookies.
 - 🌍 Czech and English interface, light and dark mode, works on phones.
