@@ -7,13 +7,21 @@ const EXPECTED = [
   71, 71, 72, 74, 74, 72, 71, 69, 67, 67, 69, 71, 69, 67, 67,
 ];
 
+/** Opens the app and, where coi-serviceworker has to reload the page first, waits for that reload. */
+async function open(page: Page): Promise<void> {
+  await page.goto("./");
+  await page.waitForFunction(() => crossOriginIsolated || navigator.serviceWorker?.controller != null, null, { timeout: 20_000 }).catch(() => undefined);
+  await page.waitForLoadState("load");
+  console.log(`crossOriginIsolated ${await page.evaluate(() => crossOriginIsolated)}`);
+}
+
 async function pitches(page: Page): Promise<number[]> {
   const raw = await page.locator("#player-card").getAttribute("data-pitches");
   return (raw ?? "").split(",").filter(Boolean).map(Number);
 }
 
 test("demo song loads and plays", async ({ page }) => {
-  await page.goto("./");
+  await open(page);
   await page.locator("[data-lang=cs]").click();
   await expect(page.locator("h1")).toHaveText("Zahraj mi");
   await page.locator("#demo-button").click();
@@ -41,9 +49,12 @@ test("recognizes notes from the demo image in the browser", async ({ page }) => 
   page.on("console", (msg) => {
     if (msg.type() === "error") console.log(`[browser] ${msg.text()}`);
   });
-  await page.goto("./");
+  await open(page);
   await page.locator("#file-input").setInputFiles("public/demo/oda-na-radost.png");
-  await expect(page.locator("#player-card")).toBeVisible({ timeout: 9 * 60_000 });
+  await expect(page.locator("#player-card:not([hidden]), #status.error").first()).toBeVisible({ timeout: 9 * 60_000 });
+  if (await page.locator("#status.error").isVisible()) {
+    throw new Error(`${await page.locator("#status-text").textContent()}\n${await page.locator("#status-log").textContent()}`);
+  }
   await page.screenshot({ path: "test-results/screenshots/recognized.png", fullPage: true });
   const got = await pitches(page);
   const score = similarity(got, EXPECTED);
