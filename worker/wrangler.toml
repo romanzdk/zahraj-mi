@@ -11,6 +11,6 @@ DAILY_LIMIT = "20"
 # Create once: npx wrangler kv namespace create zahraj-mi-ai, then put its id here.
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "6c9ea1e8bbb24531a314c70686322bd2"
 
 # Secret, not committed: npx wrangler secret put OPENROUTER_API_KEY
