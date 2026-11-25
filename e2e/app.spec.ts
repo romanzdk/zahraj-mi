@@ -74,3 +74,19 @@ test("tells the user when the page reloaded during recognition", async ({ page }
   await page.reload();
   await expect(page.locator("#status")).toBeHidden();
 });
+
+test("theme and language switches stick after reload", async ({ page }) => {
+  await open(page);
+  await page.locator("[data-theme-choice=dark]").click();
+  await page.locator("[data-lang=en]").click();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("[data-theme-choice=dark]")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".cta .btn")).toHaveText("Contact me");
+  await expect(page.locator(".cta .btn")).toHaveAttribute("href", /^mailto:romanzdk@gmail\.com/);
+
+  await page.locator("[data-theme-choice=light]").click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.locator("[data-theme-choice=system]").click();
+  await expect(page.locator("[data-theme-choice=system]")).toHaveAttribute("aria-pressed", "true");
+});

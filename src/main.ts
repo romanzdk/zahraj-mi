@@ -405,6 +405,42 @@ document.querySelectorAll<HTMLButtonElement>("[data-lang]").forEach((b) => {
   b.addEventListener("click", () => renderLanguage(b.dataset.lang as Lang));
 });
 
+type Theme = "light" | "dark" | "system";
+const systemDark = matchMedia("(prefers-color-scheme: dark)");
+
+function savedTheme(): Theme {
+  try {
+    const saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") return saved;
+  } catch {
+    // storage may be blocked
+  }
+  return "system";
+}
+
+function renderTheme(theme: Theme): void {
+  const dark = theme === "dark" || (theme === "system" && systemDark.matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  document.querySelectorAll<HTMLButtonElement>("[data-theme-choice]").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.themeChoice === theme));
+  });
+}
+
+document.querySelectorAll<HTMLButtonElement>("[data-theme-choice]").forEach((b) => {
+  b.addEventListener("click", () => {
+    const theme = b.dataset.themeChoice as Theme;
+    try {
+      if (theme === "system") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", theme);
+    } catch {
+      // storage may be blocked
+    }
+    renderTheme(theme);
+  });
+});
+systemDark.addEventListener("change", () => renderTheme(savedTheme()));
+renderTheme(savedTheme());
+
 $("silent-hint").hidden = !isIos;
 
 applyTranslations();

@@ -2,7 +2,7 @@ export type Lang = "cs" | "en";
 
 const cs = {
   tagline: "Vyfoť noty, pusť si melodii a zpívej.",
-  "step1.title": "1. Noty",
+  "step1.title": "Noty",
   "step1.camera": "Vyfotit noty",
   "step1.upload": "Nahrát obrázek",
   "step1.drop": "nebo sem přetáhni obrázek (JPG, PNG)",
@@ -26,7 +26,7 @@ const cs = {
   "status.error": "Rozpoznání se nepovedlo: {msg}",
   "status.badFile": "Soubor se nepodařilo načíst: {msg}",
   "status.unsupported": "Tenhle prohlížeč neumí spustit rozpoznávání not. Zkus aktuální Chrome, Edge, Firefox nebo Safari.",
-  "step2.title": "2. Přehrát a zpívat",
+  "step2.title": "Přehrát a zpívat",
   "player.play": "Přehrát",
   "player.stop": "Zastavit",
   "player.pitch": "Dej tón",
@@ -58,11 +58,19 @@ const cs = {
   "footer.privacy": "Vše běží ve tvém prohlížeči: obrázky ani noty se nikam neposílají.",
   "footer.source": "Zdrojový kód",
   "footer.engine": "Rozpoznávání not: homr (open source)",
+  "footer.author": "Vytvořil",
+  "footer.ctaTitle": "Chcete rychlejší verzi s kvalitnějším rozpoznáváním?",
+  "footer.ctaText": "Rozpoznávání na serveru, víc hlasů, akordy. Ozvěte se mi.",
+  "footer.ctaButton": "Kontaktujte mě",
+  "theme.label": "Vzhled",
+  "theme.light": "Světlý vzhled",
+  "theme.dark": "Tmavý vzhled",
+  "theme.system": "Vzhled podle systému",
 };
 
 const en: Record<keyof typeof cs, string> = {
   tagline: "Snap your sheet music, play the melody and sing along.",
-  "step1.title": "1. Sheet music",
+  "step1.title": "Sheet music",
   "step1.camera": "Take a photo",
   "step1.upload": "Upload image",
   "step1.drop": "or drop an image here (JPG, PNG)",
@@ -86,7 +94,7 @@ const en: Record<keyof typeof cs, string> = {
   "status.error": "Recognition failed: {msg}",
   "status.badFile": "Could not open the file: {msg}",
   "status.unsupported": "This browser cannot run note recognition. Try a current Chrome, Edge, Firefox or Safari.",
-  "step2.title": "2. Play and sing",
+  "step2.title": "Play and sing",
   "player.play": "Play",
   "player.stop": "Stop",
   "player.pitch": "Starting note",
@@ -118,6 +126,14 @@ const en: Record<keyof typeof cs, string> = {
   "footer.privacy": "Everything runs in your browser: images and notes are never uploaded.",
   "footer.source": "Source code",
   "footer.engine": "Note recognition: homr (open source)",
+  "footer.author": "Made by",
+  "footer.ctaTitle": "Want a faster version with better recognition?",
+  "footer.ctaText": "Server-side recognition, more voices, chords. Get in touch.",
+  "footer.ctaButton": "Contact me",
+  "theme.label": "Appearance",
+  "theme.light": "Light theme",
+  "theme.dark": "Dark theme",
+  "theme.system": "Match system theme",
 };
 
 export type Key = keyof typeof cs;
@@ -158,5 +174,10 @@ export function applyTranslations(root: ParentNode = document): void {
   document.documentElement.lang = lang;
   root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
     el.textContent = t(el.dataset.i18n as Key);
+  });
+  root.querySelectorAll<HTMLElement>("[data-i18n-label]").forEach((el) => {
+    const text = t(el.dataset.i18nLabel as Key);
+    el.setAttribute("aria-label", text);
+    if (el.tagName === "BUTTON") el.title = text;
   });
 }
