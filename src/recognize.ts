@@ -69,7 +69,13 @@ async function prepare(image: Blob): Promise<ImageBitmap> {
   return resized;
 }
 
+let lastStage = "";
+
 function toStep(p: Progress): RecognizeStep {
+  if (p.stage !== lastStage) {
+    lastStage = p.stage;
+    note(`stage ${p.stage} ${p.done}/${p.total}`);
+  }
   if (p.stage === "models") {
     return { kind: "models", loadedMb: Math.round(p.done / 1e6), totalMb: Math.round(p.total / 1e6) };
   }
@@ -104,7 +110,8 @@ async function attempt(image: Blob, prefer: Backend, onStep: (step: RecognizeSte
  */
 export async function recognizeImage(image: Blob, onStep: (step: RecognizeStep) => void): Promise<string> {
   onStep({ kind: "starting" });
-  let result = await attempt(image, recognizer?.prefer ?? "webgpu", onStep);
+  lastStage = "";
+  let result = await attempt(image, recognizer?.prefer ?? preferredBackend(), onStep);
   if (!result.ok && RETRY_ERRORS.has(result.error)) {
     onStep({ kind: "retrying" });
     result = await attempt(image, "wasm-threads", onStep);
@@ -114,6 +121,12 @@ export async function recognizeImage(image: Blob, onStep: (step: RecognizeStep) 
     throw new RecognizeError(result.error, message, diagnostics());
   }
   return result.musicXml;
+}
+
+/** `?backend=wasm` (or webgpu, wasm-threads) forces an engine, to compare them on one device. */
+function preferredBackend(): Backend {
+  const asked = new URLSearchParams(location.search).get("backend");
+  return asked === "wasm" || asked === "wasm-threads" || asked === "webgpu" ? asked : "webgpu";
 }
 
 export function diagnostics(): string {
