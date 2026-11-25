@@ -95,3 +95,4 @@ Bug reports with a photo that was misread are very welcome – see [CONTRIBUTING
 
 [AGPL-3.0](LICENSE), because the recognition engine (homr, homr-web) is AGPL-3.0.
 Third-party components and their licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The sound samples in `public/samples/` keep their own license (CC BY 3.0), not the AGPL.
