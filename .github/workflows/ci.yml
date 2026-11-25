@@ -30,6 +30,48 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  worker:
+    name: AI worker tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  ai-ui:
+    name: AI reading UI (mocked Worker)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_AI_API_URL: https://ai.invalid
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test e2e/ai.spec.ts --project chromium
+        env:
+          AI_E2E: "1"
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: ai-ui-report
+          path: test-results/
+          retention-days: 14
+
   build:
     name: Build and end-to-end tests
     needs: test
@@ -50,6 +92,9 @@ jobs:
       - name: Download and verify models
         run: npm run models
       - run: npm run build
+        env:
+          # Empty unless the repository variable is set: then the invite-only AI reading is hidden.
+          VITE_AI_API_URL: ${{ vars.AI_API_URL }}
       - name: Install browsers
         run: npx playwright install --with-deps chromium webkit
       - name: End-to-end tests in Chromium and WebKit (includes real note recognition)
@@ -72,7 +117,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: build
+    needs: [build, worker, ai-ui]
     runs-on: ubuntu-latest
     permissions:
       pages: write

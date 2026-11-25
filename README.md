@@ -57,6 +57,13 @@ On five real songbook photos (Czech Christmas songs, 430–1200 px wide) every p
 - Repeats are played once (no jumping back yet).
 - The first recognition downloads the models; on mobile data that is a lot, Wi-Fi is recommended.
 
+## AI reading for invited people (optional)
+
+Some songbook photos are too small or blurry for homr. For those, invited people can let an AI model read the notes.
+It runs through a small Cloudflare Worker ([`worker/`](worker/README.md)) that keeps the OpenRouter key, checks invite codes
+and has a daily limit per person. The free in-browser recognition stays the default for everyone; without the Worker
+configured, the site shows nothing about AI.
+
 ## Running locally
 
 Requires Node.js 22+.

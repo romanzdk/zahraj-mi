@@ -68,10 +68,25 @@
           <img id="preview-img" alt="" />
           <div class="actions">
             <button type="button" class="btn primary" id="recognize-button" data-i18n="step1.recognize"></button>
+            <button type="button" class="btn" id="ai-button" data-i18n="ai.button" hidden></button>
             <button type="button" class="btn" id="reset-button" data-i18n="step1.another"></button>
           </div>
         </div>
         <p class="firsttime muted" id="firsttime" data-i18n="step1.firstTime"></p>
+        <div id="ai-box" class="ai" hidden>
+          <details id="ai-invite">
+            <summary data-i18n="ai.have"></summary>
+            <form id="ai-form" class="ai-form">
+              <input id="ai-code" type="text" autocomplete="off" spellcheck="false" aria-label="Invite code" />
+              <button type="submit" class="btn small" data-i18n="ai.use"></button>
+            </form>
+            <p class="muted" id="ai-form-error" hidden></p>
+          </details>
+          <p id="ai-active" hidden>
+            <span id="ai-active-text"></span>
+            <button type="button" class="link" id="ai-logout" data-i18n="ai.logout"></button>
+          </p>
+        </div>
         <div id="status" class="status" role="status" aria-live="polite" hidden>
           <span class="spinner" aria-hidden="true"></span>
           <span id="status-text"></span>

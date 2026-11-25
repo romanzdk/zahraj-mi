@@ -1,5 +1,6 @@
 import "./style.css";
 import { unzipSync, strFromU8 } from "fflate";
+import { AiError, aiEnabled, checkAccess, codeFromUrl, recognizeWithAi, storeCode, storedCode, type AiAccess } from "./ai";
 import { applyTranslations, getLang, setLang, t, type Key, type Lang } from "./i18n";
 import { melodyRange, midiToName, parseMusicXml, type Melody } from "./melody";
 import { melodyToMidi } from "./midi";
@@ -20,6 +21,15 @@ const els = {
   previewImg: $<HTMLImageElement>("preview-img"),
   recognizeButton: $<HTMLButtonElement>("recognize-button"),
   resetButton: $<HTMLButtonElement>("reset-button"),
+  aiButton: $<HTMLButtonElement>("ai-button"),
+  aiBox: $("ai-box"),
+  aiInvite: $<HTMLDetailsElement>("ai-invite"),
+  aiForm: $<HTMLFormElement>("ai-form"),
+  aiCode: $<HTMLInputElement>("ai-code"),
+  aiFormError: $("ai-form-error"),
+  aiActive: $("ai-active"),
+  aiActiveText: $("ai-active-text"),
+  aiLogout: $<HTMLButtonElement>("ai-logout"),
   status: $("status"),
   statusText: $("status-text"),
   statusProgress: $<HTMLProgressElement>("status-progress"),
@@ -58,6 +68,7 @@ const state = {
   melody: null as Melody | null,
   transpose: 0,
   busy: false,
+  ai: null as (AiAccess & { code: string }) | null,
   statusKey: null as { key: Key; vars: Record<string, string | number>; isError: boolean } | null,
 };
 
@@ -82,6 +93,7 @@ function setBusy(busy: boolean): void {
   state.busy = busy;
   els.recognizeButton.disabled = busy;
   els.resetButton.disabled = busy;
+  els.aiButton.disabled = busy;
   els.demoButton.disabled = busy;
   if (!busy) els.statusProgress.hidden = true;
   renderStatus();
@@ -174,6 +186,58 @@ async function runRecognition(): Promise<void> {
     window.clearInterval(tick);
     storeRun(null);
   }
+}
+
+function renderAi(): void {
+  els.aiBox.hidden = !aiEnabled;
+  els.aiButton.hidden = !state.ai;
+  els.aiActive.hidden = !state.ai;
+  els.aiInvite.hidden = Boolean(state.ai);
+  if (state.ai) els.aiActiveText.textContent = t("ai.active", { name: state.ai.name, n: state.ai.remaining });
+}
+
+async function activateAi(code: string, fromForm: boolean): Promise<void> {
+  els.aiFormError.hidden = true;
+  try {
+    const access = await checkAccess(code);
+    storeCode(code);
+    state.ai = { ...access, code };
+  } catch (err) {
+    state.ai = null;
+    if (err instanceof AiError && err.code === "invalid_code") storeCode(null);
+    if (fromForm || !(err instanceof AiError && err.code === "invalid_code")) {
+      els.aiInvite.open = true;
+      els.aiFormError.textContent = t(err instanceof AiError && err.code === "invalid_code" ? "ai.invalid" : "ai.offline");
+      els.aiFormError.hidden = false;
+    }
+  }
+  renderAi();
+}
+
+async function runAi(): Promise<void> {
+  if (!state.image || !state.ai || state.busy) return;
+  setBusy(true);
+  setStatus("ai.working");
+  try {
+    const { musicXml, remaining } = await recognizeWithAi(state.image, state.ai.code);
+    state.ai.remaining = remaining;
+    await loadMusicXml(musicXml);
+    setBusy(false);
+    setStatus("ai.done", { n: remaining });
+  } catch (err) {
+    setBusy(false);
+    if (err instanceof AiError && err.code === "daily_limit") {
+      state.ai.remaining = 0;
+      setStatus("ai.limit", {}, true);
+    } else if (err instanceof AiError && err.code === "invalid_code") {
+      storeCode(null);
+      state.ai = null;
+      setStatus("ai.invalid", {}, true);
+    } else {
+      setStatus("ai.error", { msg: err instanceof Error ? err.message : String(err) }, true, diagnostics());
+    }
+  }
+  renderAi();
 }
 
 async function loadMusicXml(xml: string): Promise<void> {
@@ -281,6 +345,7 @@ function renderLanguage(lang: Lang): void {
   fillVoiceOptions();
   renderStatus();
   renderPlayer();
+  renderAi();
 }
 
 player.setEvents({
@@ -304,7 +369,7 @@ for (const input of [els.cameraInput, els.fileInput]) {
     input.value = "";
     if (file) {
       showImage(file);
-      void runRecognition();
+      if (!state.ai) void runRecognition();
     }
   });
 }
@@ -321,7 +386,7 @@ els.dropzone.addEventListener("drop", (e) => {
   if (!file) return;
   if (file.type.startsWith("image/")) {
     showImage(file);
-    void runRecognition();
+    if (!state.ai) void runRecognition();
   } else {
     void openMusicXml(file);
   }
@@ -350,6 +415,17 @@ els.demoButton.addEventListener("click", async () => {
 });
 
 els.recognizeButton.addEventListener("click", () => void runRecognition());
+els.aiButton.addEventListener("click", () => void runAi());
+els.aiForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const code = els.aiCode.value.trim();
+  if (code) void activateAi(code, true);
+});
+els.aiLogout.addEventListener("click", () => {
+  storeCode(null);
+  state.ai = null;
+  renderAi();
+});
 els.copyLog.addEventListener("click", () => {
   void navigator.clipboard?.writeText(els.statusLog.textContent ?? "").then(() => {
     els.copyLog.textContent = t("status.copied");
@@ -410,3 +486,7 @@ $("silent-hint").hidden = !isIos;
 applyTranslations();
 renderLanguage(getLang());
 reportInterruptedRun();
+if (aiEnabled) {
+  const code = codeFromUrl() ?? storedCode();
+  if (code) void activateAi(code, false);
+}

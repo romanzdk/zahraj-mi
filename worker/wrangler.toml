@@ -1,0 +1,16 @@
+name = "zahraj-mi-ai"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://romanzdk.github.io,http://localhost:5173,http://localhost:4173"
+MODEL = "anthropic/claude-opus-5.5"
+DAILY_LIMIT = "20"
+
+# Invite codes ("code:<code>" -> name) and daily usage counters.
+# Create once: npx wrangler kv namespace create zahraj-mi-ai, then put its id here.
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Secret, not committed: npx wrangler secret put OPENROUTER_API_KEY
