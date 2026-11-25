@@ -121,7 +121,7 @@ export function diagnostics(): string {
   return [
     `app ${__APP_VERSION__}`,
     `ua ${navigator.userAgent}`,
-    `crossOriginIsolated ${String(globalThis.crossOriginIsolated)}`,
+    `crossOriginIsolated ${String(globalThis.crossOriginIsolated)}, service worker ${navigator.serviceWorker?.controller ? "controls the page" : "none"}`,
     `webgpu ${nav.gpu ? "yes" : "no"}, cores ${navigator.hardwareConcurrency ?? "?"}, memory ${nav.deviceMemory ?? "?"} GB`,
     ...log,
   ].join("\n");
