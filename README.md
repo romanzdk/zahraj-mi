@@ -17,7 +17,7 @@ Everything runs in your browser – free, no sign-up, and your images never leav
 ## Features
 
 - 📷 **Photo or scan in, melody out.** Take a picture with your phone or upload an image (JPG, PNG). A MusicXML file works too.
-- 🎹 **Made for singing.** Tempo slider, count-in, *starting note* button, loop a range of measures.
+- 🎹 **Made for singing.** Tempo slider, count-in, *starting note* button, loop a range of measures. Pick the sound: piano, flute, guitar, violin or organ.
 - 🎚️ **Fits your voice.** Transpose by semitones or pick a voice type (bass, tenor, alto, soprano, child) and the melody moves into a comfortable range.
 - 👀 **See what was read.** The recognized score is shown with a cursor that follows the music, so mistakes are easy to spot.
 - 🗂️ **Your songs, remembered.** Every recognized song is saved in your browser with its tempo, key and other settings. Open it again from *My songs* without taking a new photo. Songs stay on this device only; clearing the site data removes them, and Safari on iPhone may clear them after a week without a visit unless the page is added to the Home Screen.
@@ -32,7 +32,7 @@ photo ──► homr (optical music recognition, in a Web Worker) ──► Musi
                                                                    │
            OpenSheetMusicDisplay ◄── score view ◄──────────────────┤
                                                                    ▼
-           Tone.js (piano samples / synth) ◄── melody line (top voice, ties merged)
+           Tone.js (instrument samples) ◄── melody line (top voice, ties merged)
 ```
 
 1. **Recognition** – [homr](https://github.com/liebharc/homr) is an open-source optical music recognition (OMR) engine built for camera photos.
@@ -40,7 +40,7 @@ photo ──► homr (optical music recognition, in a Web Worker) ──► Musi
    [onnxruntime-web](https://onnxruntime.ai/) with WebGPU where available and WebAssembly elsewhere.
    The models (about 100–160 MB) are downloaded once on first use and then cached by the browser.
 2. **Melody extraction** – the MusicXML is reduced to a single singable line: the first part, its first voice and the top note of every chord, with tied notes merged.
-3. **Playback** – [Tone.js](https://tonejs.github.io/) plays the line with Salamander piano samples or a soft synth, and [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) draws the score.
+3. **Playback** – [Tone.js](https://tonejs.github.io/) plays the line with recorded samples of a piano, flute, guitar, violin or organ (each loaded only when picked), and [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) draws the score.
 
 ### Why no AI service?
 
