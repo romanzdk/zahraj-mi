@@ -1,0 +1,23 @@
+{
+  "name": "zahraj-mi-ai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Invite-only AI note reading for Zahraj mi: a Cloudflare Worker that calls OpenRouter.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "invite": "node scripts/invite.mjs",
+    "eval": "node scripts/eval.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261109.1",
+    "@types/node": "26.6.10",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0",
+    "wrangler": "4.159.0"
+  }
+}

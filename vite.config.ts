@@ -24,5 +24,5 @@ export default defineConfig({
     // worker is idle". One file per worker avoids the self-import.
     rolldownOptions: { output: { inlineDynamicImports: true } },
   },
-  test: { exclude: ["e2e/**", "node_modules/**"] },
+  test: { exclude: ["e2e/**", "worker/**", "node_modules/**"] },
 });

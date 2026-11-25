@@ -360,6 +360,33 @@ select:focus-visible {
   background: #fff;
 }
 
+.ai {
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+.ai summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.ai-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ai-form input {
+  flex: 1;
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
 .status {
   display: flex;
   flex-wrap: wrap;
