@@ -1,7 +1,22 @@
 import * as Tone from "tone";
 import type { Melody, MelodyNote } from "./melody";
 
-export type InstrumentId = "piano" | "soft" | "bright";
+const octaves = (notes: string[], from: number, to: number) =>
+  Array.from({ length: to - from + 1 }, (_, i) => notes.map((n) => `${n}${from + i}`)).flat();
+
+/** Sample files in public/samples/<instrument>/; Tone.Sampler pitch-shifts the notes in between. */
+export const SAMPLES = {
+  piano: octaves(["C", "Ds", "Fs", "A"], 1, 7),
+  flute: ["C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6", "A6", "C7"],
+  guitar: ["E2", "Gs2", "C3", "E3", "Gs3", "C4", "E4", "Gs4", "C5"],
+  violin: ["G3", "C4", "E4", "A4", "C5", "E5", "A5", "C6", "E6"],
+  organ: octaves(["C", "Fs"], 2, 5).concat("C6"),
+};
+
+export type InstrumentId = keyof typeof SAMPLES;
+
+// Measured on the first second of a middle note: these sustain and sit ~9 dB above the piano.
+const VOLUME_DB: Partial<Record<InstrumentId, number>> = { flute: -10, violin: -8, organ: -9 };
 
 export interface PlayOptions {
   tempo: number;
@@ -19,17 +34,6 @@ export interface PlayerEvents {
   onEnd?: () => void;
 }
 
-type Voice = Tone.Sampler | Tone.PolySynth;
-
-const PIANO_NOTES = ["C", "Ds", "Fs", "A"];
-
-function pianoUrls(): Record<string, string> {
-  const urls: Record<string, string> = {};
-  for (let octave = 1; octave <= 7; octave++) {
-    for (const n of PIANO_NOTES) urls[`${n.replace("s", "#")}${octave}`] = `${n}${octave}.mp3`;
-  }
-  return urls;
-}
 
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
 
@@ -41,7 +45,7 @@ function startAudio(): Promise<void> {
 }
 
 export class Player {
-  private voices = new Map<InstrumentId, Voice>();
+  private voices = new Map<InstrumentId, Promise<Tone.Sampler>>();
   private click: Tone.MembraneSynth | null = null;
   private events: PlayerEvents = {};
   private playing = false;
@@ -54,31 +58,22 @@ export class Player {
     return this.playing;
   }
 
-  private async voice(id: InstrumentId): Promise<Voice> {
-    const existing = this.voices.get(id);
-    if (existing) return existing;
-    let v: Voice;
-    if (id === "piano") {
-      v = new Tone.Sampler({
-        urls: pianoUrls(),
-        baseUrl: `${import.meta.env.BASE_URL}samples/piano/`,
-        release: 1,
-      }).toDestination();
-      await Tone.loaded();
-    } else if (id === "soft") {
-      v = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.06, decay: 0.1, sustain: 0.8, release: 0.4 },
-      }).toDestination();
-      v.volume.value = -6;
-    } else {
-      v = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "triangle8" },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.3 },
-      }).toDestination();
-      v.volume.value = -10;
+  private voice(id: InstrumentId): Promise<Tone.Sampler> {
+    let v = this.voices.get(id);
+    if (!v) {
+      v = new Promise((resolve, reject) => {
+        const sampler = new Tone.Sampler({
+          urls: Object.fromEntries(SAMPLES[id].map((n) => [n.replace("s", "#"), `${n}.mp3`])),
+          baseUrl: `${import.meta.env.BASE_URL}samples/${id}/`,
+          release: 1,
+          volume: VOLUME_DB[id] ?? 0,
+          onload: () => resolve(sampler),
+          onerror: reject,
+        }).toDestination();
+      });
+      v.catch(() => this.voices.delete(id));
+      this.voices.set(id, v);
     }
-    this.voices.set(id, v);
     return v;
   }
 
@@ -159,7 +154,7 @@ export class Player {
     transport.stop();
     transport.cancel();
     transport.loop = false;
-    for (const v of this.voices.values()) v.releaseAll();
+    for (const v of this.voices.values()) void v.then((s) => s.releaseAll(), () => undefined);
     this.playing = false;
   }
 }

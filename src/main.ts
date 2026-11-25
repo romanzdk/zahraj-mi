@@ -321,6 +321,8 @@ function applySettings(s: SongSettings): void {
   state.transpose = s.transpose;
   els.voice.value = s.voice;
   els.instrument.value = s.instrument;
+  // Songs saved before an instrument was removed would leave the list empty.
+  if (!els.instrument.value) els.instrument.value = "piano";
   els.fromMeasure.value = String(s.from);
   els.toMeasure.value = String(s.to);
   els.countIn.checked = s.countIn;

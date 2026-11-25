@@ -165,3 +165,43 @@ test("says so when the browser will not store the song", async ({ page }) => {
   await expect(page.locator("#status.error")).toContainText("could not be saved");
   await expect(page.locator("#library")).toBeHidden();
 });
+
+test("a song saved with a removed instrument opens with the piano", async ({ page }) => {
+  await open(page);
+  const xml = readFileSync("public/demo/oda-na-radost.musicxml", "utf8");
+  const settings = { tempo: 90, transpose: 0, voice: "", instrument: "soft", from: 0, to: 0, countIn: false, loop: false };
+  await page.evaluate(
+    (song) => localStorage.setItem(`zahraj-mi.song.${song.id}`, JSON.stringify(song)),
+    { id: "old", name: "Old", createdAt: 1, xml, thumb: null, settings },
+  );
+  await page.reload();
+  await page.locator("#library-list li .song-open").click();
+  await expect(page.locator("#player-card")).toBeVisible();
+  await expect(page.locator("#instrument")).toHaveValue("piano");
+});
+
+test("every instrument loads its samples and plays", async ({ page }) => {
+  const bad: string[] = [];
+  const loaded = new Set<string>();
+  page.on("response", (r) => {
+    const m = r.url().match(/samples\/(\w+)\//);
+    if (!m) return;
+    if (r.ok()) loaded.add(m[1]);
+    else bad.push(`${r.status()} ${r.url()}`);
+  });
+  page.on("requestfailed", (r) => bad.push(r.url()));
+  await open(page);
+  await page.locator("[data-lang=en]").click();
+  await page.locator("#demo-button").click();
+  await expect(page.locator("#player-card")).toBeVisible();
+  const ids = await page.locator("#instrument option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+  for (const id of ids) {
+    await page.locator("#instrument").selectOption(id);
+    await page.locator("#play-button").click();
+    await expect(page.locator("#play-button")).toHaveText("Stop");
+    await page.locator("#play-button").click();
+    await expect(page.locator("#play-button")).toHaveText("Play");
+  }
+  expect(bad).toEqual([]);
+  expect([...loaded].sort()).toEqual([...ids].sort());
+});
