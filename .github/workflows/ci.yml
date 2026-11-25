@@ -73,10 +73,8 @@ jobs:
           retention-days: 14
 
   build:
-    name: Build and end-to-end tests
-    needs: test
+    name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -95,29 +93,53 @@ jobs:
         env:
           # Empty unless the repository variable is set: then the invite-only AI reading is hidden.
           VITE_AI_API_URL: ${{ vars.AI_API_URL }}
-      - name: Install browsers
-        run: npx playwright install --with-deps chromium webkit
-      - name: End-to-end tests in Chromium and WebKit (includes real note recognition)
-        run: npm run test:e2e
-      - name: Upload test report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 14
       - name: Upload site
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
+  e2e:
+    name: End-to-end tests (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Browsers come preinstalled; keep the tag equal to @playwright/test in package.json.
+    container: mcr.microsoft.com/playwright:v1.65.0-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, webkit, webkit-pages]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Cache recognition models
+        uses: actions/cache@v6
+        with:
+          path: node_modules/.cache/homr-models
+          key: homr-models-${{ hashFiles('node_modules/homr-web/dist/models/manifest.js') }}
+      - name: Download and verify models
+        run: npm run models
+      - run: npm run build
+      - name: End-to-end tests (includes real note recognition)
+        run: npm run test:e2e -- --project ${{ matrix.project }}
+      - name: Upload test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
   deploy:
     name: Deploy to GitHub Pages
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: [build, worker, ai-ui]
+    needs: [test, build, e2e, worker, ai-ui]
     runs-on: ubuntu-latest
     permissions:
       pages: write
