@@ -562,6 +562,10 @@ footer a:not(.btn) {
   text-decoration: none;
 }
 
+footer a.underlined {
+  text-decoration: underline;
+}
+
 footer a:not(.btn):hover {
   text-decoration: underline;
 }
