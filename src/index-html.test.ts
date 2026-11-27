@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { SAMPLES } from "./player";
+import { t, type Key } from "./i18n";
 
 const SITE = "https://romanzdk.github.io/zahraj-mi/";
 const doc = new DOMParser().parseFromString(readFileSync("index.html", "utf8"), "text/html");
@@ -45,5 +46,12 @@ describe("index.html", () => {
     const ld = JSON.parse(doc.querySelector('script[type="application/ld+json"]')!.textContent!);
     expect(ld["@type"]).toBe("WebApplication");
     expect(ld.url).toBe(SITE);
+  });
+
+  it("translates every aria-label instead of hardcoding one language", () => {
+    expect(doc.querySelectorAll("[aria-label]:not(svg *):not([aria-label^='+']):not([aria-label^='-'])")).toHaveLength(0);
+    for (const el of doc.querySelectorAll<HTMLElement>("[data-i18n-label]")) {
+      expect(t(el.dataset.i18nLabel as Key)).not.toBe("");
+    }
   });
 });
