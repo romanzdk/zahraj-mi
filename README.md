@@ -1,7 +1,7 @@
 # Zahraj mi 🎵
 
 **Snap a photo of sheet music, hear the melody and sing along.**
-Everything runs in your browser – free, no sign-up, and your images never leave your device.
+Everything runs in your browser – free, no sign-up, and your images stay on your device (the only exception is the optional [AI reading for invited people](#ai-reading-for-invited-people-optional)).
 
 [![CI](https://github.com/romanzdk/zahraj-mi/actions/workflows/ci.yml/badge.svg)](https://github.com/romanzdk/zahraj-mi/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
@@ -22,7 +22,7 @@ Everything runs in your browser – free, no sign-up, and your images never leav
 - 👀 **See what was read.** The recognized score is shown with a cursor that follows the music, so mistakes are easy to spot.
 - 🗂️ **Your songs, remembered.** Every recognized song is saved in your browser with its tempo, key and other settings. Open it again from *My songs* without taking a new photo. Songs stay on this device only; clearing the site data removes them, and Safari on iPhone may clear them after a week without a visit unless the page is added to the Home Screen.
 - 💾 **Take it with you.** Download the melody as MIDI (in your chosen key and tempo) or the score as MusicXML.
-- 🔒 **Private by design.** Note recognition runs on your device. No server, no account, no tracking of your images. Visits are counted with [GoatCounter](https://www.goatcounter.com/), without cookies.
+- 🔒 **Private by design.** Note recognition runs on your device. No account, no tracking of your images, and nothing is uploaded unless you use the optional AI reading below. Visits are counted with [GoatCounter](https://www.goatcounter.com/), without cookies.
 - 🌍 Czech and English interface, light and dark mode, works on phones.
 
 ## How it works
@@ -42,7 +42,7 @@ photo ──► homr (optical music recognition, in a Web Worker) ──► Musi
 2. **Melody extraction** – the MusicXML is reduced to a single singable line: the first part, its first voice and the top note of every chord, with tied notes merged.
 3. **Playback** – [Tone.js](https://tonejs.github.io/) plays the line with recorded samples of a piano, flute, guitar, violin or organ (each loaded only when picked), and [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) draws the score.
 
-### Why no AI service?
+### Why not an AI service by default?
 
 Recognition does not need a paid model: homr is free, open source and runs on the user's device.
 That keeps the app free to run (static hosting only), fast after the first load and private.

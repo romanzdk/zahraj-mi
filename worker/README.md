@@ -16,7 +16,7 @@ browser ──(photo + invite code)──► Worker ──► OpenRouter (zero d
 - **What is sent:** the whole photo plus 6 overlapping strips of it, enlarged. The model reads small noteheads
   much better from the enlarged strips (see results below).
 - **Privacy:** OpenRouter is called with `provider.zdr = true` and `data_collection = "deny"`. The Worker logs
-  only who, model, cost and time, never the image.
+  only who, model, number of image strips, cost and time (or the error text), never the image.
 - **Without this Worker** the web app hides everything about AI (`VITE_AI_API_URL` unset).
 
 ## Setup (once)
