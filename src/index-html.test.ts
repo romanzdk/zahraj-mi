@@ -42,6 +42,13 @@ describe("index.html", () => {
     expect(existsSync("THIRD_PARTY_NOTICES.md")).toBe(true);
   });
 
+  it("links the privacy page from the footer and the AI invite, and the page exists", () => {
+    for (const key of ["footer.privacyLink", "ai.privacy"]) {
+      expect(doc.querySelector(`a[data-i18n="${key}"]`)?.getAttribute("href")).toBe("privacy.html");
+    }
+    expect(existsSync("public/privacy.html")).toBe(true);
+  });
+
   it("has valid JSON-LD", () => {
     const ld = JSON.parse(doc.querySelector('script[type="application/ld+json"]')!.textContent!);
     expect(ld["@type"]).toBe("WebApplication");
