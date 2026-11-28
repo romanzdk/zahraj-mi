@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ochrana údajů – Zahraj mi</title>
+    <meta name="description" content="Jaké údaje Zahraj mi zpracovává: návštěvnost (GoatCounter), čtení not pomocí AI pro pozvané, nastavení v prohlížeči." />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="https://romanzdk.github.io/zahraj-mi/privacy.html" />
+    <style>
+      :root {
+        --bg: #f6f3ee;
+        --surface: #ffffff;
+        --text: #1d2321;
+        --muted: #5d6763;
+        --border: #e4ddd2;
+        --accent: #1f5f5b;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #151a19;
+          --surface: #1e2523;
+          --text: #e9eeec;
+          --muted: #a3aeaa;
+          --border: #34403d;
+          --accent: #5fb3aa;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+      article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 8px 24px 24px;
+        margin-top: 24px;
+      }
+      h1 { font-size: 1.6rem; line-height: 1.25; }
+      h2 { font-size: 1.15rem; margin-top: 1.6em; }
+      a { color: var(--accent); }
+      .muted { color: var(--muted); }
+      nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+      nav a { display: inline-block; min-height: 44px; line-height: 44px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav>
+        <a href="./">← Zahraj mi</a>
+        <a href="#cs" lang="cs">Česky</a>
+        <a href="#en" lang="en">English</a>
+      </nav>
+
+      <article id="cs" lang="cs">
+        <h1>Ochrana osobních údajů</h1>
+        <p class="muted">Platí od 28. 11. 2026.</p>
+
+        <h2>Kdo za aplikací stojí</h2>
+        <p>
+          Správce: <strong>Roman Žydyk</strong>, fyzická osoba, která aplikaci provozuje zdarma a nekomerčně.
+          Kontakt: <a href="https://romanzdk.com">romanzdk.com</a>.
+        </p>
+
+        <h2>Rozpoznávání not v prohlížeči</h2>
+        <p>
+          Běžné rozpoznávání not (homr) běží celé ve tvém prohlížeči. Fotky, obrázky ani noty se nikam neposílají.
+        </p>
+
+        <h2>Návštěvnost (GoatCounter)</h2>
+        <p>
+          Počet návštěv měří <a href="https://www.goatcounter.com/help/privacy">GoatCounter</a> (provozuje Martin Tournoij, Irsko;
+          servery v Německu a Finsku). Neukládá IP adresy ani nic do tvého zařízení (žádné cookies). IP adresu a údaje o prohlížeči
+          drží jen v paměti nejvýš 8 hodin, aby poznal opakovanou návštěvu. Uloží jen souhrnná čísla: stránka, prohlížeč, systém,
+          přibližná země, jazyk a šířka obrazovky.
+        </p>
+        <p>Účel: vědět, kolik lidí aplikaci používá. Právní základ: oprávněný zájem (čl. 6 odst. 1 písm. f GDPR).</p>
+
+        <h2>Čtení not pomocí AI (jen pro pozvané)</h2>
+        <p>
+          Když s kódem pozvánky klikneš na „Přečíst pomocí AI“, pošle aplikace obrázek (a jeho zvětšené výřezy) takto:
+        </p>
+        <ol>
+          <li>na server <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a> (Cloudflare, Inc., USA), kde běží malý program aplikace,</li>
+          <li>dál na <a href="https://openrouter.ai/privacy">OpenRouter</a> (OpenRouter, Inc., USA),</li>
+          <li>a ten na model Claude od <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> (Anthropic PBC, USA), případně u jeho cloudových partnerů (Amazon Bedrock, Google Vertex AI).</li>
+        </ol>
+        <p>
+          Aplikace obrázek nikde neukládá. U OpenRouter si žádá jen poskytovatele s nulovým uchováváním dat (zero data retention)
+          a bez použití dat k tréninku. OpenRouter podle svých zásad drží obrázky jen po dobu předání, kromě ochrany proti zneužití,
+          zabezpečení, účtování a zákonných povinností; i poskytovatel modelu může kvůli odhalení zneužití vstup krátce uchovat.
+          Proto foť jen noty, ne lidi ani dokumenty.
+        </p>
+        <p>
+          Server aplikace u Cloudflare ukládá jméno z pozvánky a počet čtení za den (smaže se po 3 dnech). Do průběžného logu
+          zapíše jméno, použitý model, cenu a dobu čtení. Výsledek čtení aplikace označí jako přečtený AI.
+        </p>
+        <p>
+          Účel: přečíst noty, o které jsi požádal(a). Právní základ: tvoje žádost o službu (čl. 6 odst. 1 písm. b GDPR).
+          Cloudflare, OpenRouter i Anthropic sídlí v USA; předání do USA se opírá o záruky podle čl. 45 nebo 46 GDPR
+          (rozhodnutí o odpovídající ochraně nebo standardní smluvní doložky), jak je popisují jejich zásady.
+        </p>
+
+        <h2>Co zůstává ve tvém prohlížeči</h2>
+        <p>
+          Do úložiště prohlížeče (localStorage) aplikace ukládá jazyk, barevný motiv, uložené písně a kód pozvánky. Nikam se
+          neposílají (kód pozvánky jen při čtení pomocí AI) a smažeš je vymazáním dat webu v prohlížeči.
+        </p>
+
+        <h2>Hosting</h2>
+        <p>
+          Stránku doručuje <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Pages</a>
+          (GitHub, Inc., USA). Jako každý webový server při tom vidí tvou IP adresu.
+        </p>
+
+        <h2>Tvoje práva</h2>
+        <p>
+          Máš právo na přístup ke svým údajům, jejich opravu, výmaz, omezení zpracování, přenositelnost a právo vznést námitku.
+          Napiš přes <a href="https://romanzdk.com">romanzdk.com</a>. Stížnost můžeš podat u
+          <a href="https://uoou.gov.cz">Úřadu pro ochranu osobních údajů</a> (Pplk. Sochora 27, 170 00 Praha 7).
+        </p>
+      </article>
+
+      <article id="en" lang="en">
+        <h1>Privacy</h1>
+        <p class="muted">Effective 28 November 2026.</p>
+
+        <h2>Who runs the app</h2>
+        <p>
+          Controller: <strong>Roman Žydyk</strong>, a private person who runs the app for free and non-commercially.
+          Contact: <a href="https://romanzdk.com">romanzdk.com</a>.
+        </p>
+
+        <h2>Note recognition in your browser</h2>
+        <p>Normal note recognition (homr) runs entirely in your browser. Photos, images and notes are not uploaded anywhere.</p>
+
+        <h2>Visit counting (GoatCounter)</h2>
+        <p>
+          Visits are counted by <a href="https://www.goatcounter.com/help/privacy">GoatCounter</a> (run by Martin Tournoij, Ireland;
+          servers in Germany and Finland). It does not store IP addresses or anything on your device (no cookies). It keeps your IP
+          address and browser details in memory for at most 8 hours to recognise a repeat visit. It stores only totals: page,
+          browser, system, approximate country, language and screen width.
+        </p>
+        <p>Purpose: knowing how many people use the app. Legal basis: legitimate interest (GDPR Art. 6(1)(f)).</p>
+
+        <h2>AI reading (invited users only)</h2>
+        <p>When you click “Read with AI” with an invite code, the app sends the image (and enlarged strips of it):</p>
+        <ol>
+          <li>to <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a> (Cloudflare, Inc., USA), where a small program of the app runs,</li>
+          <li>on to <a href="https://openrouter.ai/privacy">OpenRouter</a> (OpenRouter, Inc., USA),</li>
+          <li>which passes it to the Claude model by <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> (Anthropic PBC, USA), or to its cloud partners (Amazon Bedrock, Google Vertex AI).</li>
+        </ol>
+        <p>
+          The app does not store the image anywhere. It asks OpenRouter for zero-data-retention providers only, with no use of
+          the data for training. Per its policy, OpenRouter keeps images only while routing the request, except for abuse
+          prevention, security, billing and legal duties; the model provider may also keep the input briefly to detect abuse.
+          So photograph only the notes, not people or documents.
+        </p>
+        <p>
+          The app's server at Cloudflare stores the invite name and the number of readings per day (deleted after 3 days). Its
+          live log records the name, model, cost and duration. The app labels the result as read by AI.
+        </p>
+        <p>
+          Purpose: reading the notes you asked for. Legal basis: your request for the service (GDPR Art. 6(1)(b)). Cloudflare,
+          OpenRouter and Anthropic are based in the USA; the transfer relies on safeguards under GDPR Art. 45 or 46 (adequacy
+          decision or standard contractual clauses) as described in their policies.
+        </p>
+
+        <h2>What stays in your browser</h2>
+        <p>
+          The app keeps your language, colour theme, saved songs and invite code in browser storage (localStorage). They are not
+          sent anywhere (the invite code only during AI reading); clear the site data in your browser to delete them.
+        </p>
+
+        <h2>Hosting</h2>
+        <p>
+          The page is served by <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Pages</a>
+          (GitHub, Inc., USA), which sees your IP address like any web server.
+        </p>
+
+        <h2>Your rights</h2>
+        <p>
+          You can ask for access, correction, deletion, restriction, portability, or object to processing. Write via
+          <a href="https://romanzdk.com">romanzdk.com</a>. You can complain to the Czech data protection authority,
+          <a href="https://uoou.gov.cz">Úřad pro ochranu osobních údajů</a> (Pplk. Sochora 27, 170 00 Prague 7), or the authority in your country.
+        </p>
+      </article>
+    </main>
+  </body>
+</html>
